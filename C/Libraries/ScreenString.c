@@ -5,9 +5,8 @@
 
 /* Plan of execution:
     1. 2d memory operations, and basic structs.
-    2. Image base struct.
-    3. Image creation functions
-    4. Layer stuct + functions
+    2. Struct heirarchy
+    4. Layer stuct + functions (since this is what will handle the images.)
     5. Base layer struct (zeroth layer)
     6. Screen struct + functions
     7. Display Objects
@@ -28,6 +27,109 @@ memory elements, we can apply algebra to simplify the problem:
  */
 
 // Functions
+// Display Structure initializers.
+Image *InitializeImage_String(void *pAllocation, char *sImageASCII, const iPoint_2D *ipImageDimensions, const iPoint_2D *ipLayerLocation){
+	if(!pAllocation || !sImageASCII || !ipImageDimensions || !ipLayerLocation){
+		return NULL;
+	} else {
+		Image *Initializer = (void *)pAllocation;
+		
+		Initializer->sImageASCII = sImageASCII;
+		Initializer->ipDimensions = *ipImageDimensions;
+		Initializer->ipLocation = *ipLayerLocation;
+		Initializer->iLinearSize = ipImageDimensions->X * ipImageDimensions->Y;
+		Initializer->bIsVisible = 1; // All images are visible by default, for usability.
+	}
+	return (Image *)pAllocation;
+}
+
+Layer *InitializeLayer_String(void *pImageBlock, char *sFormattedLayerASCII, iPoint_2D *ipLayerDimensions, iPoint_2D *ipLayerLocation){
+	if(!pAllocation || !sLayerASCII || !ipImageDimensions || !iplayerLocation){
+		return NULL;
+	} else {
+		pImages = pImageBlock; // Images contained in this layer.
+		ipLocation = &ipLayerLocation; // The location of this layer relative to it's screen.
+		ipDimensions &ipLayerDimensions;// The dimensions of the layer
+		iLinearSize = ipLayerDimensions->X * ipLayerDimensions->Y;
+		bIsVisible = 1;
+		cImageCount = (int)&sFormattedLayerASCII;
+		cImageMaxCount = ;
+	}
+	return (Layer *)pAllocation;
+}
+// Object Display Functions
+/*Purpose: 
+Arguments: 
+Returns: 
+Bugs: None known.
+*/
+Image *UpdateImage(Image *pDisplayImage, Image *pImage, iPoint_2D *iLocationOffset){
+	iPoint_2D iDestinationLocation, iZero;
+	
+	iDestinationLocation.X = iLocationOffset->X + pImage->ipDimensions.X;
+	iDestinationLocation.Y = iLocationOffset->Y + pImage->ipDimensions.Y;
+	
+	iZero.X = 0;
+	iZero.Y = 0;
+	
+	memcpy_2D(pDisplayImage, pImage, &iDestinationLocation, &(pDisplayImage->ipDimensions),
+		&iZero, &(pImage->ipDimensions), &(pImage->ipDimensions));
+	
+	return pDisplayImage;
+}
+
+Image *UpdateLayer(Image *pDisplayImage, Layer *pLayer){
+	// Find the visible Images and display them
+	for(int iImageIndex = 0; iImageIndex < (int)pLayer->cImageCount; iImageIndex++)
+		if(pLayer->pImages[iImageIndex].bIsVisible)
+			UpdateImage(pDisplayImage, &pLayer->pImages[iImageIndex], &(pLayer->ipLocation));
+	
+	return pDisplayImage;
+}
+
+/*Purpose: 
+Arguments: *pDisplayImage - Pointer to the image that will be drawn to the screen.
+	*pScreen - Pointer to the Screen that will be printed.
+Returns: 
+Bugs: None known.
+*/
+Image *UpdateScreen(Image *pDisplayImage, Screen *pScreen){
+	// Find the visible Layers and display them
+	for(int iLayerIndex = 0; iLayerIndex < (int)pScreen->cLayerCount; iLayerIndex++)
+		if(pScreen->pLayers[iLayerIndex].bIsVisible)
+			UpdateLayer(pDisplayImage, &pScreen->pLayers[iLayerIndex]);
+	
+	return pDisplayImage;
+}
+
+Display *UpdateDisplay(Display *pDisplay){
+	// Find the visible screens and display them
+	for(int iScreenIndex = 0; iScreenIndex < (int)pDisplay->cScreenCount; iScreenIndex++)
+		if(pDisplay->pScreens[iScreenIndex].bIsVisible)
+			UpdateScreen((Image *)pDisplay, &pDisplay->pScreens[iScreenIndex]);
+	
+	// Clear the screen, Then print the generated screen.
+	ClearConsole();
+	PrintImage((Image *)pDisplay);
+	
+	return pDisplay;
+}
+
+/*Purpose: 
+Arguments: 
+Returns: 
+Bugs: None known.
+*/
+void PrintImage(Image *pImage){
+	// Display the unmodified dest array.
+	for(int iRowIndex = 0; iRowIndex < (int)pImage->ipDimensions.X; iRowIndex++){
+		for(int iColumnIndex = 0; iColumnIndex < (int)pImage->ipDimensions.Y; iColumnIndex++){
+			printf("%c", pImage->sImageASCII[iRowIndex * (int)(pImage->ipDimensions.X) + iColumnIndex]);
+		}
+		printf("\n");
+	}
+}
+
 // Memory manipulation
 /*Purpose: Reorients a 1D array into a 2D block and places it into another
     separate larger or equal size 2D block at the provided location.
@@ -129,22 +231,6 @@ void ClearConsole(void){
 
 void SetCursorLocation(iPoint_2D *TargetLocation){
 	printf("\033[%d;%dH", TargetLocation->Y, TargetLocation->X);
-}
-
-// TEMPORARY FUNCTION
-/*Purpose: 
-Arguments: 
-Returns: 
-Bugs: None known.
-*/
-void printBlock(void *pMemoryBlock, iPoint_2D *BlockDimensions){
-	// Display the unmodified dest array.
-	for(int iRowIndex = 0; iRowIndex < BlockDimensions->X; iRowIndex++){
-		for(int iColumnIndex = 0; iColumnIndex < BlockDimensions->Y; iColumnIndex++){
-			printf("%c", ((char *)pMemoryBlock)[iRowIndex * BlockDimensions->X + iColumnIndex]);
-		}
-		printf("\n");
-	}
 }
 
 #endif
