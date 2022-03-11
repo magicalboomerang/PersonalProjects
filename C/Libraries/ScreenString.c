@@ -29,31 +29,62 @@ memory elements, we can apply algebra to simplify the problem:
 // Functions
 // Display Structure initializers.
 Image *InitializeImage_String(void *pAllocation, char *sImageASCII, const iPoint_2D *ipImageDimensions, const iPoint_2D *ipLayerLocation){
+	Image *Initializer = pAllocation;
+	
 	if(!pAllocation || !sImageASCII || !ipImageDimensions || !ipLayerLocation){
 		return NULL;
 	} else {
-		Image *Initializer = (void *)pAllocation;
-		
 		Initializer->sImageASCII = sImageASCII;
 		Initializer->ipDimensions = *ipImageDimensions;
 		Initializer->ipLocation = *ipLayerLocation;
-		Initializer->iLinearSize = ipImageDimensions->X * ipImageDimensions->Y;
+		Initializer->iDisplaySize = ipImageDimensions->X * ipImageDimensions->Y;
 		Initializer->bIsVisible = 1; // All images are visible by default, for usability.
 	}
 	return (Image *)pAllocation;
 }
 
-Layer *InitializeLayer_String(void *pImageBlock, char *sFormattedLayerASCII, iPoint_2D *ipLayerDimensions, iPoint_2D *ipLayerLocation){
-	if(!pAllocation || !sLayerASCII || !ipImageDimensions || !iplayerLocation){
+// NOTE: THE IMAGE BLOCK DOES NOT READ CHARACTERS FOR DIMENSIONAL DATA. IT TREATS THE
+// DATA AS BINARY NOT CHARACTERS. This is intended to read data from file to initialize.
+Layer *InitializeLayer_FormattedString(void *pImageAllocation, char *sFormattedLayerASCII){
+	int *ipImage, iImageIndex;
+	size_t iVariablReadOffset = 0, iVariableWriteOffset = 0;
+	Layer *pInitializer = pImageAllocation;
+	Image *pLastImage;
+	iPoint_2D iImageLocation, iImageDimensions;
+	
+	if(!pImageAllocation || !sFormattedLayerASCII){
 		return NULL;
 	} else {
-		pImages = pImageBlock; // Images contained in this layer.
-		ipLocation = &ipLayerLocation; // The location of this layer relative to it's screen.
-		ipDimensions &ipLayerDimensions;// The dimensions of the layer
-		iLinearSize = ipLayerDimensions->X * ipLayerDimensions->Y;
-		bIsVisible = 1;
-		cImageCount = (int)&sFormattedLayerASCII;
-		cImageMaxCount = ;
+		ipImage = (int *)sFormattedLayerASCII;
+		// Extract the data from the ASCII block
+		pInitializer->cImageCount = ipImage[0];
+		pInitializer->cImageMaxCount = ipImage[1];
+		pInitializer->ipLocation.X = ipImage[2];
+		pInitializer->ipLocation.Y = ipImage[3];
+		pInitializer->ipDimensions.X = ipImage[4];
+		pInitializer->ipDimensions.Y = ipImage[5];
+		pInitializer->iDisplaySize = pInitializer->ipDimensions.X * pInitializer->ipDimensions.Y;
+		pInitializer->bIsVisible = 1;
+		
+		// Set up the image address space.
+		pInitializer->Images = pImageAllocation;
+		
+		// Using running total offsets, properly read and write the images
+		// I think there is a better solution to be found.
+		for( iImageIndex = 0; iImageIndex < pInitializer->cImageCount; iImageIndex){
+			// Get 'image' details
+			iImageLocation.X = *(ipImage + 6 + iVariablReadOffset);
+			iImageLocation.X = *(ipImage + 7 + iVariablReadOffset);
+			iImageDimensions.X = *(ipImage + 8 + iVariablReadOffset);
+			iImageDimensions.X = *(ipImage + 9 + iVariablReadOffset);
+			
+			// Skip over the image just initialized to begin writing images
+			pLastImage = InitializeImage_String((pInitializer + 1) + iVariableWriteOffset, ipImage + 10 + iVariablReadOffset, iImageDimensions, iImageLocation);
+			
+			// Calculate the new offsets.
+			iVariablReadOffset += (size_t)(pLastImage->iDisplaySize + 4 * sizeof(int));
+			iVariableWriteOffset += (size_t)(pLastImage->iDisplaySize + sizeof(Image));
+		}
 	}
 	return (Layer *)pAllocation;
 }

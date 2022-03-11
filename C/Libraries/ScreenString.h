@@ -48,7 +48,7 @@ typedef struct Image{
 	char *sImageASCII; // The memory block of the characters of this image
 	iPoint_2D ipLocation;//The location of this image relative to the parent LAYER.
 	iPoint_2D ipDimensions;// Dimensions of the image.
-	int iLinearSize;//Used frequently for move ops. Precalculated for efficiency.
+	int iDisplaySize;//Used frequently for move ops. Precalculated for efficiency.
 	char bIsVisible;// Boolean indicating whether to draw or not
 } Image;
 
@@ -56,7 +56,7 @@ typedef struct Layer{
 	Image *pImages; // Images contained in this layer.
 	iPoint_2D ipLocation; // The location of this layer relative to it's screen.
 	iPoint_2D ipDimensions;// The dimensions of the layer
-	int iLinearSize;
+	int iDisplaySize;
 	char bIsVisible;
 	char cImageCount;
 	char cImageMaxCount;
@@ -84,7 +84,7 @@ typedef struct Display{
 } Display;
 
 // Function definitions
-Image *InitializeImage(void *pAllocation, char *sImageASCII, const iPoint_2D *ipImageDimensions, const iPoint_2D *ipLayerLocation);
+Layer *InitializeLayer_FormattedString(void *pImageAllocation, char *sFormattedLayerASCII);
 Display *UpdateDisplay(Display *pDisplay);
 Image *UpdateScreen(Image *pDisplayImage, Screen *pScreen);
 Image *UpdateLayer(Image *pDisplayImage, Layer *pLayer);
