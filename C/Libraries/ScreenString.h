@@ -45,7 +45,7 @@ for another library.
  */
 
 typedef struct Image{
-	char *sImageASCII; // The memory block of the characters of this image
+	void *sImageFormedData; // The memory block of the characters of this image
 	iPoint_2D ipLocation;//The location of this image relative to the parent LAYER.
 	iPoint_2D ipDimensions;// Dimensions of the image.
 	int iDisplaySize;//Used frequently for move ops. Precalculated for efficiency.
@@ -53,7 +53,7 @@ typedef struct Image{
 } Image;
 
 typedef struct Layer{
-	Image *pImages; // Images contained in this layer.
+	Image **pImages; // Images contained in this layer.
 	iPoint_2D ipLocation; // The location of this layer relative to it's screen.
 	iPoint_2D ipDimensions;// The dimensions of the layer
 	int iDisplaySize;
@@ -63,7 +63,7 @@ typedef struct Layer{
 } Layer;
 
 typedef struct Screen{ // Dimensions Not neccessary, as they 
-	Layer *pLayers;
+	Layer **pLayers;
 //	char *(*InputValidatorFunction)(char *); // Removed for now. will likely separate 
 //	void (*ValidatorFailureFunction)(void);  // I/O from this entirely.
 //	iPoint_2D iCursorLocation;
@@ -74,7 +74,7 @@ typedef struct Screen{ // Dimensions Not neccessary, as they
 
 typedef struct Display{
 	Image *ScreenLiteral;
-	Screen *pScreens;
+	Screen **pScreens;
 	Layer *pSystemLayer;
 	iPoint_2D ipResolution;
 	char cScreenCount;
@@ -84,7 +84,10 @@ typedef struct Display{
 } Display;
 
 // Function definitions
-Layer *InitializeLayer_FormattedString(void *pImageAllocation, char *sFormattedLayerASCII);
+Image *InitializeImage(void *sImageFormedData);
+Layer *InitializeLayer(void *sLayerFormedData);
+void ReleaseImage(Image *iTargetImage);
+void ReleaseLayer(Layer *lTargetLayer);
 Display *UpdateDisplay(Display *pDisplay);
 Image *UpdateScreen(Image *pDisplayImage, Screen *pScreen);
 Image *UpdateLayer(Image *pDisplayImage, Layer *pLayer);
