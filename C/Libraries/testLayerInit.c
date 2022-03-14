@@ -3,7 +3,7 @@
 #include "ScreenString.h"
 
 int main(){
-	unsigned int iDetailIndex;
+	int iDetailIndex;
 	
 	char *sImageBlocks[] = 
 	{"111111222222333333",
@@ -11,10 +11,10 @@ int main(){
 	 "0000000000000000000000000000000000000000000000000000"
 	};
 	
-	int iLayerDetails[] = {3,10,1,1,100,50};
+	int iLayerDetails[] = {3,10,5,5,100,50};
 	
-	iPoint_2D iImageDimensions[] = {{.X = 6, .Y = 3}, {.X = 2, .Y = 6}, {.X = 52, .Y = 1}};
-	iPoint_2D iImageLocation[] = {{.X = 25, .Y = 57}, {.X = 99, .Y = 40}, {.X = 1, .Y = 1}};
+	iPoint_2D iImageDimensions[] = {{.X = 6, .Y = 3}, {.X = 2, .Y = 6}, {.X = 51, .Y = 1}};
+	iPoint_2D iImageLocation[] = {{.X = 93, .Y = 44}, {.X = 0, .Y = 0}, {.X = 80, .Y = 0}};
 	
 	char *sLayerString = malloc(82 + 18 * sizeof(int));
 	
@@ -25,7 +25,7 @@ int main(){
 	}
 	
 	// set up a new basis
-	void *pImageWrite = (void *)(sLayerString + 6*sizeof(int));
+	void *pImageWrite = (void *)&(sLayerString[6*sizeof(int)]);
 	
 	for(iDetailIndex = 0; iDetailIndex < 3; iDetailIndex++){
 		memcpy(pImageWrite, (void *)&(iImageLocation[iDetailIndex].X), sizeof(int));
@@ -49,16 +49,44 @@ int main(){
 	Layer *TestLayer = InitializeLayer((void *)sLayerString);
 	printf("\n@@@@@@@@@@@@@@@@@@@@ Displaying Layer Object @@@@@@@@@@@\nLayer Address: %p", TestLayer);
 	
-	for(iDetailIndex = 0; iDetailIndex < (154 + sizeof(Layer)); iDetailIndex++){
-		if(!(iDetailIndex % 4)){
+	for(iDetailIndex = 0; iDetailIndex < (int)sizeof(Layer); iDetailIndex++){
+		if(!(iDetailIndex % 4))
 			printf("\n------------  INT  -----------------\n");
-		}
 		printf("Character: %c\tHexadecimal: %.2X\n", ((unsigned char *)TestLayer)[iDetailIndex], ((unsigned char *)TestLayer)[iDetailIndex]);
 	}
 	
+	
+	// Need to test layer here to ensure it is actually being built correctly
+	// Create a simple display image. This will be automated in the full process.
+	Image *LayerDisplay = malloc(sizeof(Image));
+		LayerDisplay->ipLocation.X = 0;
+		LayerDisplay->ipLocation.Y = 0;
+		LayerDisplay->ipDimensions.X = 100;
+		LayerDisplay->ipDimensions.Y = 50;
+		LayerDisplay->iDisplaySize = 5000;
+		LayerDisplay->bIsVisible = 1;
+	
+	// Actually allocate the image and blank it.
+	LayerDisplay->pImageFormedData = malloc(LayerDisplay->iDisplaySize * sizeof(char));
+	memset(LayerDisplay->pImageFormedData, 0, LayerDisplay->iDisplaySize);
+	
+	PrintImage(LayerDisplay);
+	//sleep(5);
+	
+	UpdateLayer(LayerDisplay, TestLayer);
+	PrintImage(LayerDisplay);
+	
+	ReleaseImage(LayerDisplay);
+	
 	ReleaseLayer(TestLayer);
 	
-	free(TestLayer);
+	// Write the Layer construction string to a file for later use
+	FILE *output = fopen("TestLayer.gui", "w");
+	
+	fwrite(sLayerString, 1, 82 + 18 * sizeof(int), output);
+	
+	fclose(output);
+	
 	free(sLayerString);
 	
 	return 0;

@@ -30,18 +30,21 @@ memory elements, we can apply algebra to simplify the problem:
 // Display Structure initializers.
 /*Purpose: This takes a FULLY FORMED AND FORMATTED Image binary object
 	and places it into memory. Must be deallocated with ReleaseImage();
-Arguments: *sImageFormedData - The binary data to be convereted into
+Arguments: *pImageFormedData - The binary data to be convereted into
 	an image object.
 Returns: An Image pointer to the newly created image.
 Bugs: None known.
 */
-Image *InitializeImage(void *sImageFormedData){
+Image *InitializeImage(void *pImageFormedData){
 	Image *pInitializer;
-	int *pIntegerExtractor = (int *)sImageFormedData;
+	int pIntegerExtractor[4];
 	
-	if(!sImageFormedData){
+	if(!pImageFormedData){
 		pInitializer = NULL;
 	} else {
+		// Note pIntegerExtractor realligns potential misalignments.
+		memcpy((void *)pIntegerExtractor, pImageFormedData, 4 * sizeof(int));
+		
 		// Make space for the image object, and set up its details
 		pInitializer = (Image *)malloc(sizeof(Image));
 		pInitializer->ipLocation.X = pIntegerExtractor[0];
@@ -52,9 +55,9 @@ Image *InitializeImage(void *sImageFormedData){
 		pInitializer->bIsVisible = 1; // All images are visible by default, for usability.
 		
 		// Make space for the image data. Separating the memory blocks ensures dynamic image sizes. The sizeof operator needs to be changed for non-ASCII application.
-		pInitializer->sImageFormedData = malloc(sizeof(char) * pInitializer->iDisplaySize);
+		pInitializer->pImageFormedData = malloc(sizeof(char) * pInitializer->iDisplaySize);
 		
-		memcpy(pInitializer->sImageFormedData, sImageFormedData + 4,sizeof(char) * pInitializer->iDisplaySize);
+		memcpy(pInitializer->pImageFormedData, pImageFormedData + 4 * sizeof(int),sizeof(char) * pInitializer->iDisplaySize);
 	}
 	return pInitializer;
 }
@@ -92,10 +95,10 @@ Layer *InitializeLayer(void *sLayerFormedData){
 		// I think there is a better solution to be found.
 		for( iImageIndex = 0; iImageIndex < pInitializer->cImageCount; iImageIndex++){
 			// Pass the address of the first byte of image data
-			pInitializer->pImages[iImageIndex] = InitializeImage(sLayerFormedData + 10 + iVariableReadOffset);
+			pInitializer->pImages[iImageIndex] = InitializeImage(sLayerFormedData + 6*sizeof(int) + iVariableReadOffset);
 			
 			// Calculate the new offsets. 4 ints + last image data
-			iVariableReadOffset += 4 + pInitializer->pImages[iImageIndex]->iDisplaySize;
+			iVariableReadOffset += 4*sizeof(int) + pInitializer->pImages[iImageIndex]->iDisplaySize;
 		}
 	}
 	return (Layer *)pInitializer;
@@ -103,8 +106,8 @@ Layer *InitializeLayer(void *sLayerFormedData){
 
 // Garbage collectors/object deallocation functions.
 void ReleaseImage(Image *iTargetImage){
-	if(iTargetImage->sImageFormedData) // If the pointer is not null...
-		free(iTargetImage->sImageFormedData);// free the image data.
+	if(iTargetImage->pImageFormedData) // If the pointer is not null...
+		free(iTargetImage->pImageFormedData);// free the image data.
 	free(iTargetImage);
 }
 
@@ -113,13 +116,10 @@ void ReleaseLayer(Layer *lTargetLayer){
 	
 	// If we have duplicate addresses, we must avoid double free calls
 	// Iteratively look for duplicate addresses, if they are equal, set one to NULL.
-	for(iImageRootIndex = 0; iImageRootIndex < lTargetLayer->cImageCount - 1; iImageRootIndex++){
-		for(iImageReferenceIndex = iImageRootIndex + 1; iImageReferenceIndex < lTargetLayer->cImageCount; iImageReferenceIndex++){
-			if(lTargetLayer->pImages[iImageRootIndex] == lTargetLayer->pImages[iImageReferenceIndex] && lTargetLayer->pImages[iImageRootIndex]){
+	for(iImageRootIndex = 0; iImageRootIndex < lTargetLayer->cImageCount - 1; iImageRootIndex++)
+		for(iImageReferenceIndex = iImageRootIndex + 1; iImageReferenceIndex < lTargetLayer->cImageCount; iImageReferenceIndex++)
+			if(lTargetLayer->pImages[iImageRootIndex] == lTargetLayer->pImages[iImageReferenceIndex] && lTargetLayer->pImages[iImageRootIndex])
 				lTargetLayer->pImages[iImageReferenceIndex] = NULL;
-			}
-		}
-	}
 	
 	// Release all of the images
 	for(iImageRootIndex = 0; iImageRootIndex < lTargetLayer->cImageCount; iImageRootIndex++){
@@ -139,16 +139,13 @@ Returns:
 Bugs: None known.
 */
 Image *UpdateImage(Image *pDisplayImage, Image *pImage, iPoint_2D *iLocationOffset){
-	iPoint_2D iDestinationLocation, iZero;
+	iPoint_2D iDestinationLocation;
 	
-	iDestinationLocation.X = iLocationOffset->X + pImage->ipDimensions.X;
-	iDestinationLocation.Y = iLocationOffset->Y + pImage->ipDimensions.Y;
+	iDestinationLocation.X = iLocationOffset->X + pImage->ipLocation.X;
+	iDestinationLocation.Y = iLocationOffset->Y + pImage->ipLocation.Y;
 	
-	iZero.X = 0;
-	iZero.Y = 0;
-	
-	memcpy_2D(pDisplayImage, pImage, &iDestinationLocation, &(pDisplayImage->ipDimensions),
-		&iZero, &(pImage->ipDimensions), &(pImage->ipDimensions));
+	memcpy_2D(pDisplayImage->pImageFormedData, pImage->pImageFormedData, &iDestinationLocation, &(pDisplayImage->ipDimensions),
+		&ZERO_2D, &(pImage->ipDimensions), &(pImage->ipDimensions));
 	
 	return pDisplayImage;
 }
@@ -197,11 +194,8 @@ Bugs: None known.
 */
 void PrintImage(Image *pImage){
 	// Display the unmodified dest array at the cursor location.
-	for(int iRowIndex = 0; iRowIndex < (int)pImage->ipDimensions.X; iRowIndex++){
-		for(int iColumnIndex = 0; iColumnIndex < (int)pImage->ipDimensions.Y; iColumnIndex++){
-			printf("%c", *(char *)(pImage->sImageFormedData + iRowIndex * (int)(pImage->ipDimensions.X) + iColumnIndex));
-		}
-		printf("\n");
+	for(int iRowIndex = 0; iRowIndex < (int)pImage->ipDimensions.Y; iRowIndex++){
+			fprintf(stdout, "%.*s\n", pImage->ipDimensions.X, (char *)(pImage->pImageFormedData + iRowIndex * sizeof(char) * pImage->ipDimensions.X));
 	}
 }
 
@@ -250,7 +244,7 @@ void *memread_2D(void *pDestination, void *pSource, const iPoint_2D *iDestDimens
 		return NULL;
 
 	for(iRowIndex = 0; iRowIndex < iDestDimensions->Y; iRowIndex++)
-		if(!memcpy(pDestination + (iDestDimensions->X * iRowIndex), pSource + (iSourceDimensions->X * iRowIndex), iDestDimensions->X))
+		if(!memcpy(pDestination + (iDestDimensions->X * iRowIndex), pSource + (iSourceDimensions->X * iRowIndex), iSourceDimensions->X))
 			return NULL;
 
 	return pDestination;
@@ -277,22 +271,21 @@ Returns: A pointer to the destination image, pDestination, or NULL for failed me
 Bugs: The excessive number of arguments will increase likelyhood of errors. I'm trying
     to find a better interface, without putting additional work/computation on the programmer.
 */
-void *memcpy_2D(void *pDestination, void *pSource, iPoint_2D *iDestLocation, iPoint_2D *iDestDimensions, iPoint_2D *iSourceLocation, iPoint_2D *iSourceDimensions, iPoint_2D *iCopyBlockDimensions){
+void *memcpy_2D(void *pDestination, void *pSource, const iPoint_2D *iDestLocation, const iPoint_2D *iDestDimensions, const iPoint_2D *iSourceLocation, const iPoint_2D *iSourceDimensions, const iPoint_2D *iCopyBlockDimensions){
 	void *pExtractedMemory;
 	
 	// If we are passed a NULL, return NULL
 	if(!pDestination || !pSource || !iDestLocation || !iDestDimensions || !iSourceLocation || !iSourceDimensions || !iCopyBlockDimensions)
 		return NULL;
-
 	
 	// Create a holding buffer for the memory slice.
 	pExtractedMemory = malloc(iCopyBlockDimensions->X * iCopyBlockDimensions->Y);
-	if(!pExtractedMemory || !pDestination || !pSource) // Verify allocation/pointers exist
+	if(!pExtractedMemory || !pDestination || !pSource)// Verify allocation/pointers exist
 		return NULL;
-	
+		
 	// Use functions to extract 2D data as 1D, then 1D to new 2D location
 	memread_2D(pExtractedMemory, pSource + (iSourceLocation->Y * iSourceDimensions->X) + iSourceLocation->X, iCopyBlockDimensions, iSourceDimensions);
-	memwrite_2D(pDestination + (iDestLocation->Y * iDestDimensions->X) + iDestLocation->X, pExtractedMemory, iDestDimensions, iCopyBlockDimensions);
+	memwrite_2D((void *)(pDestination + (iDestLocation->Y * iDestDimensions->X) + iDestLocation->X), pExtractedMemory, iDestDimensions, iCopyBlockDimensions);
 	
 	free(pExtractedMemory);
 	

@@ -45,7 +45,7 @@ for another library.
  */
 
 typedef struct Image{
-	void *sImageFormedData; // The memory block of the characters of this image
+	void *pImageFormedData; // The memory block of the characters of this image
 	iPoint_2D ipLocation;//The location of this image relative to the parent LAYER.
 	iPoint_2D ipDimensions;// Dimensions of the image.
 	int iDisplaySize;//Used frequently for move ops. Precalculated for efficiency.
@@ -84,7 +84,7 @@ typedef struct Display{
 } Display;
 
 // Function definitions
-Image *InitializeImage(void *sImageFormedData);
+Image *InitializeImage(void *pImageFormedData);
 Layer *InitializeLayer(void *sLayerFormedData);
 void ReleaseImage(Image *iTargetImage);
 void ReleaseLayer(Layer *lTargetLayer);
@@ -97,7 +97,7 @@ void PrintImage(Image *pImage);
 // 2D memory manipulation
 void *memwrite_2D(void *pDestination, void *pSource, const iPoint_2D *iDestDimensions, const iPoint_2D *iSourceDimensions);
 void *memread_2D(void *pDestination, void *pSource, const iPoint_2D *iDestDimensions, const iPoint_2D *iSourceDimensions);
-void *memcpy_2D(void *pDestination, void *pSource, iPoint_2D *iDestLocation, iPoint_2D *iDestDimensions, iPoint_2D *iSourceLocation, iPoint_2D *iSourceDimensions, iPoint_2D *iCopyBlockDimensions);
+void *memcpy_2D(void *pDestination, void *pSource, const iPoint_2D *iDestLocation, const iPoint_2D *iDestDimensions, const iPoint_2D *iSourceLocation, const iPoint_2D *iSourceDimensions, const iPoint_2D *iCopyBlockDimensions);
 
 // Display functions
 void ClearConsole(void);
