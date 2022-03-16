@@ -16,10 +16,10 @@ int main(){
 	
 	// Create a simple display image. This will be automated in the full process.
 	Image *LayerDisplay = malloc(sizeof(Image));
-		LayerDisplay->ipLocation.X = 0;
-		LayerDisplay->ipLocation.Y = 0;
-		LayerDisplay->ipDimensions.X = 100;
-		LayerDisplay->ipDimensions.Y = 50;
+		LayerDisplay->pLocation.X = 0;
+		LayerDisplay->pLocation.Y = 0;
+		LayerDisplay->pDimensions.X = 100;
+		LayerDisplay->pDimensions.Y = 50;
 		LayerDisplay->iDisplaySize = 5000;
 		LayerDisplay->bIsVisible = 1;
 	

@@ -1,0 +1,6 @@
+File Identifiers:
+	1. What kind of object is in this file.
+	
+Object Details:
+	1. This objects details
+	2. 

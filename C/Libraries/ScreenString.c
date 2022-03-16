@@ -12,80 +12,65 @@
     7. Display Objects
  */
 
-/* Special development note: The memwrite/copy_2D functions are actually dimension lowering
-functions. The 2D to linear actually takes an ND block and pulls a (N-1)D block.
-Since all memory is in truth linear, we are simply transforming the representative dimensions
-of a block. By the nature of how computers store memory, Taking a 2D slice from a 3D array is
-equivalent to treating the 2D and 3D blocks as 1D and 2D blocks, respectively.
-We can then make a recursive function to extract or modify blocks of any theoretic
-dimension!
-
-It is of special note, since multidimensional arrays ultimately are just uniformly spaced
-memory elements, we can apply algebra to simplify the problem:
-    Dn = Size of n-th dimension
-    Xn = The selected element of the n-th dimension
- */
-
 // Functions
 // Display Structure initializers.
 /*Purpose: This takes a FULLY FORMED AND FORMATTED Image binary object
 	and places it into memory. Must be deallocated with ReleaseImage();
-Arguments: *pImageFormedData - The binary data to be convereted into
+Arguments: *pImageDataFile - The binary data to be convereted into
 	an image object.
 Returns: An Image pointer to the newly created image.
 Bugs: None known.
 */
-Image *InitializeImage(void *pImageFormedData){
+Image *InitializeImage(FILE *pImageDataFile){
 	Image *pInitializer;
-	int pIntegerExtractor[4];
+	int pImageDetails[4];
 	
-	if(!pImageFormedData){
+	if(!pImageDataFile){
 		pInitializer = NULL;
 	} else {
-		// Note pIntegerExtractor realligns potential misalignments.
-		memcpy((void *)pIntegerExtractor, pImageFormedData, 4 * sizeof(int));
+		// Note pImageDetails realligns potential misalignments.
+		fread((void *)pImageDetails, sizeof(int), 4, pImageDataFile);
 		
 		// Make space for the image object, and set up its details
 		pInitializer = (Image *)malloc(sizeof(Image));
-		pInitializer->ipLocation.X = pIntegerExtractor[0];
-		pInitializer->ipLocation.Y = pIntegerExtractor[1];
-		pInitializer->ipDimensions.X = pIntegerExtractor[2];
-		pInitializer->ipDimensions.Y = pIntegerExtractor[3];
-		pInitializer->iDisplaySize = pInitializer->ipDimensions.X * pInitializer->ipDimensions.Y;
+		pInitializer->pLocation.X = pImageDetails[0];
+		pInitializer->pLocation.Y = pImageDetails[1];
+		pInitializer->pDimensions.X = pImageDetails[2];
+		pInitializer->pDimensions.Y = pImageDetails[3];
+		pInitializer->iDisplaySize = pInitializer->pDimensions.X * pInitializer->pDimensions.Y;
 		pInitializer->bIsVisible = 1; // All images are visible by default, for usability.
 		
 		// Make space for the image data. Separating the memory blocks ensures dynamic image sizes. The sizeof operator needs to be changed for non-ASCII application.
 		pInitializer->pImageFormedData = malloc(sizeof(char) * pInitializer->iDisplaySize);
 		
-		memcpy(pInitializer->pImageFormedData, pImageFormedData + 4 * sizeof(int),sizeof(char) * pInitializer->iDisplaySize);
+		fread(pInitializer->pImageFormedData, sizeof(char), pInitializer->iDisplaySize, pImageDataFile);
 	}
 	return pInitializer;
 }
 
 // NOTE: THE IMAGE BLOCK DOES NOT READ CHARACTERS FOR DIMENSIONAL DATA. IT TREATS THE
-// DATA AS BINARY NOT CHARACTERS. This is intended to read data from file to initialize.
-// 3/12 - Big changes, probably needs a refactor
-Layer *InitializeLayer(void *sLayerFormedData){
-	int *ipImage, iImageIndex;
-	size_t iVariableReadOffset = 0;
+// DATA AS BINARY, NOT CHARACTERS. This is intended to read data from file to initialize.
+Layer *InitializeLayer(FILE *pLayerDataFile){
+	int pLayerDetails[6], iImageIndex;
 	Layer *pInitializer;
 	
-	if(!sLayerFormedData){
+	if(!pLayerDataFile){
 		return NULL;
 	} else {
-		ipImage = (int *)sLayerFormedData;
-		
 		// Allocate the space for this Layer
-		pInitializer = malloc(sizeof(Layer));
+		pInitializer = (Layer *)malloc(sizeof(Layer));
 		
-		// Extract the data from the ASCII block
-		pInitializer->cImageCount = ipImage[0];
-		pInitializer->cImageMaxCount = ipImage[1];
-		pInitializer->ipLocation.X = ipImage[2];
-		pInitializer->ipLocation.Y = ipImage[3];
-		pInitializer->ipDimensions.X = ipImage[4];
-		pInitializer->ipDimensions.Y = ipImage[5];
-		pInitializer->iDisplaySize = pInitializer->ipDimensions.X * pInitializer->ipDimensions.Y;
+		// Read the layer details.
+		fread((void *)pLayerDetails, sizeof(int), 6, pLayerDataFile);
+		
+		// Add details to the newly created object.
+		pInitializer->cImageMaxCount = Clamp(pLayerDetails[0], 0, IMAGECAP);
+		pInitializer->cImageCount = Clamp(pLayerDetails[1], 0, pInitializer->cImageMaxCount);
+		pInitializer->pLocation.X = pLayerDetails[2];
+		pInitializer->pLocation.Y = pLayerDetails[3];
+		pInitializer->pDimensions.X = pLayerDetails[4];
+		pInitializer->pDimensions.Y = pLayerDetails[5];
+		pInitializer->iDisplaySize = pInitializer->pDimensions.X * pInitializer->pDimensions.Y;
 		pInitializer->bIsVisible = 1;
 		
 		// Allocate the image address space. Separating the Layer and Image address lists in memory allows us to resize the maximum image count during run-time.
@@ -95,41 +80,167 @@ Layer *InitializeLayer(void *sLayerFormedData){
 		// I think there is a better solution to be found.
 		for( iImageIndex = 0; iImageIndex < pInitializer->cImageCount; iImageIndex++){
 			// Pass the address of the first byte of image data
-			pInitializer->pImages[iImageIndex] = InitializeImage(sLayerFormedData + 6*sizeof(int) + iVariableReadOffset);
-			
-			// Calculate the new offsets. 4 ints + last image data
-			iVariableReadOffset += 4*sizeof(int) + pInitializer->pImages[iImageIndex]->iDisplaySize;
+			pInitializer->pImages[iImageIndex] = InitializeImage(pLayerDataFile);
 		}
 	}
 	return (Layer *)pInitializer;
 }
 
-// Garbage collectors/object deallocation functions.
-void ReleaseImage(Image *iTargetImage){
-	if(iTargetImage->pImageFormedData) // If the pointer is not null...
-		free(iTargetImage->pImageFormedData);// free the image data.
-	free(iTargetImage);
+/*Purpose: 
+Arguments: 
+Returns: 
+Bugs: None known.
+*/
+Screen *InitializeScreen(FILE *pScreenDataFile){
+	int pScreenDetails[2], iLayerIndex;
+	Screen *pInitializer;
+	
+	if(!pScreenDataFile){
+		return NULL;
+	} else {
+		fread((void *)pScreenDetails, sizeof(int), 2, pScreenDataFile);
+		
+		// Allocate the space for this Layer
+		pInitializer = (Screen *)malloc(sizeof(Screen));
+		
+		// Extract the data from the ASCII block
+		pInitializer->cLayerMaxCount = Clamp(pScreenDetails[0], 0, LAYERCAP);
+		pInitializer->cLayerCount = Clamp(pScreenDetails[1], 0, pInitializer->cLayerMaxCount);
+		pInitializer->bIsVisible = 1;
+		
+		// Allocate the layer address space. Separating the Screen and Layer address lists in memory allows us to resize the maximum image count during run-time.
+		pInitializer->pLayers = (Layer **)malloc(sizeof(Layer) * pInitializer->cLayerMaxCount);
+		
+		// Using running total offsets, properly read and write the images
+		// I think there is a better solution to be found.
+		for( iLayerIndex = 0; iLayerIndex < pInitializer->cLayerCount; iLayerIndex++){
+			// Pass the address of the first byte of image data
+			pInitializer->pLayers[iLayerIndex] = InitializeLayer(pScreenDataFile);
+		}
+	}
+	return (Screen *)pInitializer;
 }
 
-void ReleaseLayer(Layer *lTargetLayer){
+/*Purpose: 
+Arguments: 
+Returns: 
+Bugs: None known.
+Note: There are excessive return NULL statements, since this object
+	must be initialized correctly. Any failure should return all
+	allocated memory to the system.
+*/
+Display *InitializeDisplay(FILE *pDisplayDataFile){
+	int pDisplayDetails[4], iScreenIndex;
+	Display *pInitializer;
+	
+	if(!pDisplayDataFile){
+		return NULL;
+	} else {
+		fread((void *)pDisplayDetails, sizeof(int), 4, pDisplayDataFile);
+		
+		// Allocate the space for this Layer
+		pInitializer = (Display *)malloc(sizeof(Display));
+		if(!pInitializer)
+			return NULL;
+		
+		// Initialize the display screen.
+		pInitializer->pScreenLiteral = (Image *)malloc(sizeof(Image));
+		if(!pInitializer->pScreenLiteral){
+			free(pInitializer);
+			return NULL;
+		}
+		// Extract the data from the read array.
+		pInitializer->cScreenMaxCount = Clamp(pDisplayDetails[0], 0, SCREENCAP);
+		pInitializer->cScreenCount = Clamp(pDisplayDetails[1], 0, pInitializer->cScreenMaxCount);
+		pInitializer->pResolution.X = pDisplayDetails[2];
+		pInitializer->pResolution.Y = pDisplayDetails[3];
+		pInitializer->bClearOnUpdate = 1;
+		
+		// Manually set up the display image
+		pInitializer->pScreenLiteral->pLocation.X = 0;
+		pInitializer->pScreenLiteral->pLocation.Y = 0;
+		pInitializer->pScreenLiteral->pDimensions.X = pInitializer->pResolution.X;
+		pInitializer->pScreenLiteral->pDimensions.Y = pInitializer->pResolution.Y;
+		pInitializer->pScreenLiteral->iDisplaySize = pInitializer->pScreenLiteral->pDimensions.X * pInitializer->pScreenLiteral->pDimensions.Y;
+		pInitializer->pScreenLiteral->bIsVisible = 1;
+		pInitializer->pScreenLiteral->pImageFormedData = malloc(sizeof(char) * pInitializer->pScreenLiteral->iDisplaySize);
+		if(!pInitializer->pScreenLiteral->pImageFormedData){
+			free(pInitializer->pScreenLiteral);
+			free(pInitializer);
+			return NULL;
+		}
+		// Blank the new screen.
+		memset(pInitializer->pScreenLiteral->pImageFormedData, ' ', sizeof(char) * pInitializer->pScreenLiteral->iDisplaySize);
+		
+		// Allocate the layer address space. Separating the Screen and Layer address lists in memory allows us to resize the maximum image count during run-time.
+		pInitializer->pScreens = (Screen **)malloc(sizeof(Screen) * pInitializer->cScreenMaxCount);
+		if(!pInitializer->pScreens){
+			free(pInitializer->pScreenLiteral->pImageFormedData);
+			free(pInitializer->pScreenLiteral);
+			free(pInitializer);
+			return NULL;
+		}
+		
+		// Initialize the system layer
+		pInitializer->pSystemLayer = InitializeLayer(pDisplayDataFile);
+		
+		// Initialize all of the screens
+		for( iScreenIndex = 0; iScreenIndex < pInitializer->cScreenCount; iScreenIndex++){
+			// Pass the address of the first byte of image data
+			pInitializer->pScreens[iScreenIndex] = InitializeScreen(pDisplayDataFile);
+		}
+	}
+	return (Display *)pInitializer;
+}
+
+// Garbage collectors/object deallocation functions.
+void ReleaseImage(Image *pTargetImage){
+	if(pTargetImage->pImageFormedData) // If the pointer is not null...
+		free(pTargetImage->pImageFormedData);// free the image data.
+	free(pTargetImage);
+}
+
+void ReleaseLayer(Layer *pTargetLayer){
 	int iImageRootIndex, iImageReferenceIndex;
 	
 	// If we have duplicate addresses, we must avoid double free calls
 	// Iteratively look for duplicate addresses, if they are equal, set one to NULL.
-	for(iImageRootIndex = 0; iImageRootIndex < lTargetLayer->cImageCount - 1; iImageRootIndex++)
-		for(iImageReferenceIndex = iImageRootIndex + 1; iImageReferenceIndex < lTargetLayer->cImageCount; iImageReferenceIndex++)
-			if(lTargetLayer->pImages[iImageRootIndex] == lTargetLayer->pImages[iImageReferenceIndex] && lTargetLayer->pImages[iImageRootIndex])
-				lTargetLayer->pImages[iImageReferenceIndex] = NULL;
+	for(iImageRootIndex = 0; iImageRootIndex < pTargetLayer->cImageCount - 1; iImageRootIndex++)
+		for(iImageReferenceIndex = iImageRootIndex + 1; iImageReferenceIndex < pTargetLayer->cImageCount; iImageReferenceIndex++)
+			if(pTargetLayer->pImages[iImageRootIndex] == pTargetLayer->pImages[iImageReferenceIndex] && pTargetLayer->pImages[iImageRootIndex])
+				pTargetLayer->pImages[iImageReferenceIndex] = NULL;
 	
 	// Release all of the images
-	for(iImageRootIndex = 0; iImageRootIndex < lTargetLayer->cImageCount; iImageRootIndex++){
-		ReleaseImage(lTargetLayer->pImages[iImageRootIndex]);
-	}
+	for(iImageRootIndex = 0; iImageRootIndex < pTargetLayer->cImageCount; iImageRootIndex++)
+		ReleaseImage(pTargetLayer->pImages[iImageRootIndex]);
 	
 	// Free the images array, and the layer itself
-	free(lTargetLayer->pImages);
-	free(lTargetLayer);
+	free(pTargetLayer->pImages);
+	free(pTargetLayer);
 	
+}
+
+void ReleaseScreen(Screen *pTargetScreen){
+	int iLayerIndex;
+	
+	for(iLayerIndex = 0; iLayerIndex < pTargetScreen->cLayerCount; iLayerIndex++)
+		ReleaseLayer(pTargetScreen->pLayers[iLayerIndex]);
+	
+	free(pTargetScreen->pLayers);
+	free(pTargetScreen);
+}
+
+void ReleaseDisplay(Display *pTargetDisplay){
+	int iScreenIndex;
+	
+	for(iScreenIndex = 0; iScreenIndex < pTargetDisplay->cScreenCount; iScreenIndex++)
+		ReleaseScreen(pTargetDisplay->pScreens[iScreenIndex]);
+	
+	ReleaseImage(pTargetDisplay->pScreenLiteral);
+	ReleaseLayer(pTargetDisplay->pSystemLayer);
+	
+	free(pTargetDisplay->pScreens);
+	free(pTargetDisplay);
 }
 
 // Object Display Functions
@@ -141,11 +252,11 @@ Bugs: None known.
 Image *UpdateImage(Image *pDisplayImage, Image *pImage, iPoint_2D *iLocationOffset){
 	iPoint_2D iDestinationLocation;
 	
-	iDestinationLocation.X = iLocationOffset->X + pImage->ipLocation.X;
-	iDestinationLocation.Y = iLocationOffset->Y + pImage->ipLocation.Y;
+	iDestinationLocation.X = iLocationOffset->X + pImage->pLocation.X;
+	iDestinationLocation.Y = iLocationOffset->Y + pImage->pLocation.Y;
 	
-	memcpy_2D(pDisplayImage->pImageFormedData, pImage->pImageFormedData, &iDestinationLocation, &(pDisplayImage->ipDimensions),
-		&ZERO_2D, &(pImage->ipDimensions), &(pImage->ipDimensions));
+	memcpy_2D(pDisplayImage->pImageFormedData, pImage->pImageFormedData, &iDestinationLocation, &(pDisplayImage->pDimensions),
+		&ZERO_2D, &(pImage->pDimensions), &(pImage->pDimensions));
 	
 	return pDisplayImage;
 }
@@ -154,7 +265,7 @@ Image *UpdateLayer(Image *pDisplayImage, Layer *pLayer){
 	// Find the visible Images and display them
 	for(int iImageIndex = 0; iImageIndex < (int)pLayer->cImageCount; iImageIndex++)
 		if(pLayer->pImages[iImageIndex]->bIsVisible)
-			UpdateImage(pDisplayImage, pLayer->pImages[iImageIndex], &(pLayer->ipLocation));
+			UpdateImage(pDisplayImage, pLayer->pImages[iImageIndex], &(pLayer->pLocation));
 	
 	return pDisplayImage;
 }
@@ -175,14 +286,23 @@ Image *UpdateScreen(Image *pDisplayImage, Screen *pScreen){
 }
 
 Display *UpdateDisplay(Display *pDisplay){
-	// Find the visible screens and display them
-	for(int iScreenIndex = 0; iScreenIndex < (int)pDisplay->cScreenCount; iScreenIndex++)
-		if(pDisplay->pScreens[iScreenIndex]->bIsVisible)
-			UpdateScreen((Image *)pDisplay, pDisplay->pScreens[iScreenIndex]);
+	// Clear the display image/object before writing to it.
+	if(pDisplay->bClearOnUpdate)
+		memset(pDisplay->pScreenLiteral->pImageFormedData, ' ', pDisplay->pScreenLiteral->iDisplaySize);
+
 	
-	// Clear the screen, Then print the generated screen.
-	ClearConsole();
-	PrintImage((Image *)pDisplay);
+	// Find the visible screens and add them to the display image
+	for(int iScreenIndex = 0; iScreenIndex < (int)pDisplay->cScreenCount; iScreenIndex++)
+		if(pDisplay->pScreens[iScreenIndex]->bIsVisible){
+			UpdateScreen(pDisplay->pScreenLiteral, pDisplay->pScreens[iScreenIndex]);
+			break; // In ALL cases, we only show one screen at a time!
+		}
+	
+	// Clear the screen. This is after image update, to reduce draw latency.
+	if(pDisplay->bClearOnUpdate)
+		ClearConsole();
+	
+	PrintImage(pDisplay->pScreenLiteral);
 	
 	return pDisplay;
 }
@@ -194,8 +314,8 @@ Bugs: None known.
 */
 void PrintImage(Image *pImage){
 	// Display the unmodified dest array at the cursor location.
-	for(int iRowIndex = 0; iRowIndex < (int)pImage->ipDimensions.Y; iRowIndex++){
-			fprintf(stdout, "%.*s\n", pImage->ipDimensions.X, (char *)(pImage->pImageFormedData + iRowIndex * sizeof(char) * pImage->ipDimensions.X));
+	for(int iRowIndex = 0; iRowIndex < (int)pImage->pDimensions.Y; iRowIndex++){
+			fprintf(stdout, "%.*s\n", pImage->pDimensions.X, (char *)(pImage->pImageFormedData + iRowIndex * sizeof(char) * pImage->pDimensions.X));
 	}
 }
 
@@ -250,7 +370,7 @@ void *memread_2D(void *pDestination, void *pSource, const iPoint_2D *iDestDimens
 	return pDestination;
 };
 
-/*Purpose: Takes a 2D section at a specified location from a larger/equal 2D block
+/*Purpose: Takes a 2D section from a specified location in a larger/equal 2D block
     and places it at a specified location in another larger/equal 2D block.
 Arguments: *pDestination - A pointer to the memory block to be written to.
     *pSource - A pointer to the memory block the smaller/equal block is to be copied from.
@@ -299,6 +419,16 @@ void ClearConsole(void){
 
 void SetCursorLocation(iPoint_2D *TargetLocation){
 	printf("\033[%d;%dH", TargetLocation->Y, TargetLocation->X);
+}
+
+int Clamp(const int iVariable, const int iMinimum, const int iMaximum){
+	int iClampedValue = iVariable > iMaximum ? iMaximum : iVariable;
+	iClampedValue = iClampedValue < iMinimum ? iMinimum : iClampedValue;
+	
+	if(iMinimum >= iMaximum)
+		return 0;
+	else
+		return iClampedValue;
 }
 
 #endif

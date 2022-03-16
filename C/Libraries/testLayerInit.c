@@ -11,10 +11,10 @@ int main(){
 	 "0000000000000000000000000000000000000000000000000000"
 	};
 	
-	int iLayerDetails[] = {3,10,5,5,100,50};
+	int iLayerDetails[] = {10,3,0,0,50,30};
 	
 	iPoint_2D iImageDimensions[] = {{.X = 6, .Y = 3}, {.X = 2, .Y = 6}, {.X = 51, .Y = 1}};
-	iPoint_2D iImageLocation[] = {{.X = 93, .Y = 44}, {.X = 0, .Y = 0}, {.X = 80, .Y = 0}};
+	iPoint_2D iImageLocation[] = {{.X = 43, .Y = 24}, {.X = 0, .Y = 0}, {.X = 30, .Y = 0}};
 	
 	char *sLayerString = malloc(82 + 18 * sizeof(int));
 	

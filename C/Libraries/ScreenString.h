@@ -7,6 +7,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define IMAGECAP 10
+#define LAYERCAP 5
+#define SCREENCAP 5
+
 // Structs
 typedef struct iPoint_2D {
 	int X;
@@ -46,16 +50,16 @@ for another library.
 
 typedef struct Image{
 	void *pImageFormedData; // The memory block of the characters of this image
-	iPoint_2D ipLocation;//The location of this image relative to the parent LAYER.
-	iPoint_2D ipDimensions;// Dimensions of the image.
+	iPoint_2D pLocation;//The location of this image relative to the parent LAYER.
+	iPoint_2D pDimensions;// Dimensions of the image.
 	int iDisplaySize;//Used frequently for move ops. Precalculated for efficiency.
 	char bIsVisible;// Boolean indicating whether to draw or not
 } Image;
 
 typedef struct Layer{
 	Image **pImages; // Images contained in this layer.
-	iPoint_2D ipLocation; // The location of this layer relative to it's screen.
-	iPoint_2D ipDimensions;// The dimensions of the layer
+	iPoint_2D pLocation; // The location of this layer relative to it's screen.
+	iPoint_2D pDimensions;// The dimensions of the layer
 	int iDisplaySize;
 	char bIsVisible;
 	char cImageCount;
@@ -73,10 +77,11 @@ typedef struct Screen{ // Dimensions Not neccessary, as they
 } Screen;
 
 typedef struct Display{
-	Image *ScreenLiteral;
+	Image *pScreenLiteral;
 	Screen **pScreens;
 	Layer *pSystemLayer;
-	iPoint_2D ipResolution;
+	iPoint_2D pResolution;
+	char bClearOnUpdate; // Should the screen be cleared between updates?
 	char cScreenCount;
 	char cScreenMaxCount;
 //	char cTransparentCharacter;
@@ -84,10 +89,14 @@ typedef struct Display{
 } Display;
 
 // Function definitions
-Image *InitializeImage(void *pImageFormedData);
-Layer *InitializeLayer(void *sLayerFormedData);
-void ReleaseImage(Image *iTargetImage);
-void ReleaseLayer(Layer *lTargetLayer);
+Image *InitializeImage(FILE *pImageFormedData);
+Layer *InitializeLayer(FILE *sLayerFormedData);
+Screen *InitializeScreen(FILE *pScreenDataFile);
+Display *InitializeDisplay(FILE *pDisplayDataFile);
+void ReleaseImage(Image *pTargetImage);
+void ReleaseLayer(Layer *pTargetLayer);
+void ReleaseScreen(Screen *pTargetScreen);
+void ReleaseDisplay(Display *pTargetDisplay);
 Display *UpdateDisplay(Display *pDisplay);
 Image *UpdateScreen(Image *pDisplayImage, Screen *pScreen);
 Image *UpdateLayer(Image *pDisplayImage, Layer *pLayer);
@@ -102,6 +111,9 @@ void *memcpy_2D(void *pDestination, void *pSource, const iPoint_2D *iDestLocatio
 // Display functions
 void ClearConsole(void);
 void setCursorLocation(iPoint_2D *TargetLocation);
+
+// Calculation functions
+int Clamp(const int iVariable, const int iMinimum, const int iMaximum);
 
 // Source files. Dependent on above Libraries.
 #include "ScreenString.c"
