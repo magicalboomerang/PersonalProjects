@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 int main(){
-	printf("\033[2J\033[5mGreat googly moogly!\n\n");
+	printf("\033[31mGreat googly moogly!\n\n");
 	
 	return 0;
 }

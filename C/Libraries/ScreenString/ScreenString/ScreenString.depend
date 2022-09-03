@@ -1,0 +1,15 @@
+# depslib dependency file v1.0
+1648529594 source:c:\users\tim\documents\projects\programming\c\libraries\screenstring\guis\wordle\testgui.c
+	<stdlib.h>
+	<stdio.h>
+	"ScreenString.h"
+
+1647552204 c:\users\tim\documents\projects\programming\c\libraries\screenstring\guis\wordle\screenstring.h
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	"ScreenString.c"
+
+1648529572 c:\users\tim\documents\projects\programming\c\libraries\screenstring\guis\wordle\screenstring.c
+	"ScreenString.h"
+

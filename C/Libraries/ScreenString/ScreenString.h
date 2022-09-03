@@ -66,7 +66,7 @@ typedef struct Layer{
 	char cImageMaxCount;
 } Layer;
 
-typedef struct Screen{ // Dimensions Not neccessary, as they 
+typedef struct Screen{ // Dimensions Not neccessary, as they are the same as display
 	Layer **pLayers;
 //	char *(*InputValidatorFunction)(char *); // Removed for now. will likely separate 
 //	void (*ValidatorFailureFunction)(void);  // I/O from this entirely.
@@ -89,10 +89,11 @@ typedef struct Display{
 } Display;
 
 // Function definitions
-Image *InitializeImage(FILE *pImageFormedData);
-Layer *InitializeLayer(FILE *sLayerFormedData);
-Screen *InitializeScreen(FILE *pScreenDataFile);
-Display *InitializeDisplay(FILE *pDisplayDataFile);
+Image *InitializeBlankImage(const iPoint_2D *pLocation, const iPoint_2D *pDimensions);
+Image *LoadImage(FILE *pImageFormedData);
+Layer *LoadLayer(FILE *sLayerFormedData);
+Screen *LoadScreen(FILE *pScreenDataFile);
+Display *LoadDisplay(FILE *pDisplayDataFile);
 void ReleaseImage(Image *pTargetImage);
 void ReleaseLayer(Layer *pTargetLayer);
 void ReleaseScreen(Screen *pTargetScreen);

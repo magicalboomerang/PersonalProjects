@@ -1,0 +1,14 @@
+Data stored
+Player 'guess' grid
+'ship' location as location list, not grid
+
+game flow:
+user clicks
+attack animation
+time delay
+
+gameplay structure
+main-menu
+	play game
+		instructions
+		

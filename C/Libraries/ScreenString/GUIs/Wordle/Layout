@@ -1,0 +1,18 @@
+1. Splash screen
+	1 Image
+	
+2. Play screen
+	1. Background layer
+		1 Background
+		2 Wordle frames
+	2. Operating layer
+		4 Letter lists (Blank)
+		1 word manager (Blank)
+	3. Feedback layer
+		2 input prompts
+		2 Invalid input response
+		1 Reprompt and endgame frames
+		1 Invalid replay input message
+		1 victory
+		1 lose
+		

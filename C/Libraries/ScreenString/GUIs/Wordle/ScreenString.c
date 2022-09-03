@@ -12,6 +12,34 @@
     7. Display Objects
  */
 
+/*Purpose: 
+Arguments: 
+Returns: 
+Bugs: None known.
+*/
+Image *InitializeBlankImage(const iPoint_2D *pLocation, const iPoint_2D *pDimensions){
+	Image *pInitializer = (Image *)malloc(sizeof(Image));
+	
+	// If the malloc succeeded, allocate the image space
+	if(pInitializer){
+		pInitializer->pImageFormedData = malloc(pDimensions->X * pDimensions->Y * sizeof(char));
+		if(!pInitializer->pImageFormedData){
+			free(pInitializer); // If the data allocation failed, free object, return null.
+			pInitializer = NULL;
+		} else {
+			pInitializer->pLocation.X = pLocation->X;
+			pInitializer->pLocation.Y = pLocation->Y;
+			pInitializer->pDimensions.X = pDimensions->X;
+			pInitializer->pDimensions.Y = pDimensions->Y;
+			pInitializer->iDisplaySize = pDimensions->X * pDimensions->Y * sizeof(char);
+			pInitializer->bIsVisible = 1;
+			memset(pInitializer->pImageFormedData, ' ', pInitializer->iDisplaySize);
+		}
+	}
+	
+	return pInitializer;
+}
+
 // Functions
 // Display Structure initializers.
 /*Purpose: This takes a FULLY FORMED AND FORMATTED Image binary object
@@ -21,7 +49,7 @@ Arguments: *pImageDataFile - The binary data to be convereted into
 Returns: An Image pointer to the newly created image.
 Bugs: None known.
 */
-Image *InitializeImage(FILE *pImageDataFile){
+Image *LoadImage(FILE *pImageDataFile){
 	Image *pInitializer;
 	int pImageDetails[4];
 	
@@ -33,24 +61,35 @@ Image *InitializeImage(FILE *pImageDataFile){
 		
 		// Make space for the image object, and set up its details
 		pInitializer = (Image *)malloc(sizeof(Image));
-		pInitializer->pLocation.X = pImageDetails[0];
-		pInitializer->pLocation.Y = pImageDetails[1];
-		pInitializer->pDimensions.X = pImageDetails[2];
-		pInitializer->pDimensions.Y = pImageDetails[3];
-		pInitializer->iDisplaySize = pInitializer->pDimensions.X * pInitializer->pDimensions.Y;
-		pInitializer->bIsVisible = 1; // All images are visible by default, for usability.
-		
-		// Make space for the image data. Separating the memory blocks ensures dynamic image sizes. The sizeof operator needs to be changed for non-ASCII application.
-		pInitializer->pImageFormedData = malloc(sizeof(char) * pInitializer->iDisplaySize);
-		
-		fread(pInitializer->pImageFormedData, sizeof(char), pInitializer->iDisplaySize, pImageDataFile);
+		if(pInitializer){
+			// Make space for the image data. Separating the memory blocks ensures dynamic image sizes.
+			pInitializer->pImageFormedData = malloc(sizeof(char) * pImageDetails[2] * pImageDetails[3]);
+			if(!pInitializer->pImageFormedData){
+				free(pInitializer);
+				pInitializer = NULL;
+			} else {
+				pInitializer->pLocation.X = pImageDetails[0];
+				pInitializer->pLocation.Y = pImageDetails[1];
+				pInitializer->pDimensions.X = pImageDetails[2];
+				pInitializer->pDimensions.Y = pImageDetails[3];
+				pInitializer->iDisplaySize = pInitializer->pDimensions.X * pInitializer->pDimensions.Y;
+				pInitializer->bIsVisible = 1; // All images are visible by default, for usability.
+				
+				fread(pInitializer->pImageFormedData, sizeof(char), pInitializer->iDisplaySize, pImageDataFile);
+			}
+		}
 	}
 	return pInitializer;
 }
 
+/*Purpose: 
+Arguments: 
+Returns: 
+Bugs: None known.
+*/
 // NOTE: THE IMAGE BLOCK DOES NOT READ CHARACTERS FOR DIMENSIONAL DATA. IT TREATS THE
 // DATA AS BINARY, NOT CHARACTERS. This is intended to read data from file to initialize.
-Layer *InitializeLayer(FILE *pLayerDataFile){
+Layer *LoadLayer(FILE *pLayerDataFile){
 	int pLayerDetails[6], iImageIndex;
 	Layer *pInitializer;
 	
@@ -59,6 +98,10 @@ Layer *InitializeLayer(FILE *pLayerDataFile){
 	} else {
 		// Allocate the space for this Layer
 		pInitializer = (Layer *)malloc(sizeof(Layer));
+		
+		if(!pInitializer){
+			return NULL;
+		}
 		
 		// Read the layer details.
 		fread((void *)pLayerDetails, sizeof(int), 6, pLayerDataFile);
@@ -74,13 +117,17 @@ Layer *InitializeLayer(FILE *pLayerDataFile){
 		pInitializer->bIsVisible = 1;
 		
 		// Allocate the image address space. Separating the Layer and Image address lists in memory allows us to resize the maximum image count during run-time.
-		pInitializer->pImages = (Image **)malloc(sizeof(Image) * pInitializer->cImageMaxCount);
+		if(pInitializer->cImageMaxCount){
+			pInitializer->pImages = (Image **)malloc(sizeof(Image *) * pInitializer->cImageMaxCount);
+		} else {
+			pInitializer->pImages = NULL;
+		}
 		
 		// Using running total offsets, properly read and write the images
 		// I think there is a better solution to be found.
 		for( iImageIndex = 0; iImageIndex < pInitializer->cImageCount; iImageIndex++){
 			// Pass the address of the first byte of image data
-			pInitializer->pImages[iImageIndex] = InitializeImage(pLayerDataFile);
+			pInitializer->pImages[iImageIndex] = LoadImage(pLayerDataFile);
 		}
 	}
 	return (Layer *)pInitializer;
@@ -91,7 +138,7 @@ Arguments:
 Returns: 
 Bugs: None known.
 */
-Screen *InitializeScreen(FILE *pScreenDataFile){
+Screen *LoadScreen(FILE *pScreenDataFile){
 	int pScreenDetails[2], iLayerIndex;
 	Screen *pInitializer;
 	
@@ -100,8 +147,8 @@ Screen *InitializeScreen(FILE *pScreenDataFile){
 	} else {
 		fread((void *)pScreenDetails, sizeof(int), 2, pScreenDataFile);
 		
-		// Allocate the space for this Layer
-		pInitializer = (Screen *)malloc(sizeof(Screen));
+		// Allocate the space for this Screen
+		pInitializer = (Screen *)malloc((size_t)sizeof(Screen));
 		
 		// Extract the data from the ASCII block
 		pInitializer->cLayerMaxCount = Clamp(pScreenDetails[0], 0, LAYERCAP);
@@ -109,13 +156,21 @@ Screen *InitializeScreen(FILE *pScreenDataFile){
 		pInitializer->bIsVisible = 1;
 		
 		// Allocate the layer address space. Separating the Screen and Layer address lists in memory allows us to resize the maximum image count during run-time.
-		pInitializer->pLayers = (Layer **)malloc(sizeof(Layer) * pInitializer->cLayerMaxCount);
+		if(pInitializer->cLayerMaxCount){
+			pInitializer->pLayers = (Layer **)malloc(sizeof(Layer *) * pInitializer->cLayerMaxCount);
+			if(!pInitializer->pLayers){
+				free(pInitializer);
+				return NULL;
+			}
+		} else {
+			pInitializer->pLayers = NULL;
+		}
 		
 		// Using running total offsets, properly read and write the images
 		// I think there is a better solution to be found.
 		for( iLayerIndex = 0; iLayerIndex < pInitializer->cLayerCount; iLayerIndex++){
 			// Pass the address of the first byte of image data
-			pInitializer->pLayers[iLayerIndex] = InitializeLayer(pScreenDataFile);
+			pInitializer->pLayers[iLayerIndex] = LoadLayer(pScreenDataFile);
 		}
 	}
 	return (Screen *)pInitializer;
@@ -129,7 +184,7 @@ Note: There are excessive return NULL statements, since this object
 	must be initialized correctly. Any failure should return all
 	allocated memory to the system.
 */
-Display *InitializeDisplay(FILE *pDisplayDataFile){
+Display *LoadDisplay(FILE *pDisplayDataFile){
 	int pDisplayDetails[4], iScreenIndex;
 	Display *pInitializer;
 	
@@ -156,41 +211,87 @@ Display *InitializeDisplay(FILE *pDisplayDataFile){
 		pInitializer->pResolution.Y = pDisplayDetails[3];
 		pInitializer->bClearOnUpdate = 1;
 		
-		// Manually set up the display image
-		pInitializer->pScreenLiteral->pLocation.X = 0;
-		pInitializer->pScreenLiteral->pLocation.Y = 0;
-		pInitializer->pScreenLiteral->pDimensions.X = pInitializer->pResolution.X;
-		pInitializer->pScreenLiteral->pDimensions.Y = pInitializer->pResolution.Y;
-		pInitializer->pScreenLiteral->iDisplaySize = pInitializer->pScreenLiteral->pDimensions.X * pInitializer->pScreenLiteral->pDimensions.Y;
-		pInitializer->pScreenLiteral->bIsVisible = 1;
-		pInitializer->pScreenLiteral->pImageFormedData = malloc(sizeof(char) * pInitializer->pScreenLiteral->iDisplaySize);
+		// Create a blank Image for the actual screen display
+		pInitializer->pScreenLiteral = InitializeBlankImage(&ZERO_2D, &(pInitializer->pResolution));
+		
 		if(!pInitializer->pScreenLiteral->pImageFormedData){
 			free(pInitializer->pScreenLiteral);
 			free(pInitializer);
 			return NULL;
 		}
-		// Blank the new screen.
-		memset(pInitializer->pScreenLiteral->pImageFormedData, ' ', sizeof(char) * pInitializer->pScreenLiteral->iDisplaySize);
 		
 		// Allocate the layer address space. Separating the Screen and Layer address lists in memory allows us to resize the maximum image count during run-time.
-		pInitializer->pScreens = (Screen **)malloc(sizeof(Screen) * pInitializer->cScreenMaxCount);
-		if(!pInitializer->pScreens){
-			free(pInitializer->pScreenLiteral->pImageFormedData);
-			free(pInitializer->pScreenLiteral);
-			free(pInitializer);
-			return NULL;
+		if(pInitializer->cScreenMaxCount){
+			pInitializer->pScreens = (Screen **)malloc(sizeof(Screen *) * pInitializer->cScreenMaxCount);
+			if(!pInitializer->pScreens){
+				free(pInitializer->pScreenLiteral->pImageFormedData);
+				free(pInitializer->pScreenLiteral);
+				free(pInitializer);
+				return NULL;
+			}
+		} else {
+			pInitializer->pScreens = NULL;
 		}
 		
 		// Initialize the system layer
-		pInitializer->pSystemLayer = InitializeLayer(pDisplayDataFile);
+		pInitializer->pSystemLayer = LoadLayer(pDisplayDataFile);
 		
 		// Initialize all of the screens
 		for( iScreenIndex = 0; iScreenIndex < pInitializer->cScreenCount; iScreenIndex++){
 			// Pass the address of the first byte of image data
-			pInitializer->pScreens[iScreenIndex] = InitializeScreen(pDisplayDataFile);
+			pInitializer->pScreens[iScreenIndex] = LoadScreen(pDisplayDataFile);
 		}
 	}
 	return (Display *)pInitializer;
+}
+
+// Add structs to the appropriate part of the heirarchy
+/*Purpose: 
+Arguments: 
+Returns: 
+Bugs: None known.
+*/
+Image *AddImage(Layer *pParentLayer, Image *pChildImage){
+	Image *pMovedImage = NULL;
+	if(pParentLayer && pChildImage) // Separate actions to prevent invalid memory access
+		if(pParentLayer->cImageCount < pParentLayer->cImageMaxCount){
+			pParentLayer->pImages[(int)++pParentLayer->cImageCount] = pChildImage;
+			pMovedImage = pChildImage;
+		}
+	
+	return pMovedImage;
+}
+
+/*Purpose: 
+Arguments: 
+Returns: 
+Bugs: None known.
+*/
+Layer *AddLayer(Screen *pParentScreen, Layer *pChildLayer){
+	Layer *pMovedLayer = NULL;
+	if(pParentScreen && pChildLayer) // Separate actions to prevent invalid memory access
+		if(pParentScreen->cLayerCount < pParentScreen->cLayerMaxCount){
+			pParentScreen->pLayers[(int)++pParentScreen->cLayerCount] = pChildLayer;
+			pMovedLayer = pChildLayer;
+		}
+	
+	return pMovedLayer;
+}
+
+/*Purpose: 
+Arguments: 
+Returns: 
+Bugs: None known.
+*/
+Screen *AddScreen(Display *pParentDisplay, Screen *pChildScreen){
+	Screen *pMovedScreen = NULL;
+	if(pParentDisplay && pChildScreen) // Separate conditionals prevent invalid memory access
+		if(pParentDisplay->cScreenCount < pParentDisplay->cScreenMaxCount){
+			pParentDisplay->pScreens[(int)++pParentDisplay->cScreenCount] = pChildScreen;
+			pMovedScreen = pChildScreen;
+		}
+	
+	return pMovedScreen;
 }
 
 // Garbage collectors/object deallocation functions.
@@ -252,8 +353,8 @@ Bugs: None known.
 Image *UpdateImage(Image *pDisplayImage, Image *pImage, iPoint_2D *iLocationOffset){
 	iPoint_2D iDestinationLocation;
 	
-	iDestinationLocation.X = iLocationOffset->X + pImage->pLocation.X;
-	iDestinationLocation.Y = iLocationOffset->Y + pImage->pLocation.Y;
+	iDestinationLocation.X = iLocationOffset->X + pImage->pLocation.X - 1;
+	iDestinationLocation.Y = iLocationOffset->Y + pImage->pLocation.Y - 1;
 	
 	memcpy_2D(pDisplayImage->pImageFormedData, pImage->pImageFormedData, &iDestinationLocation, &(pDisplayImage->pDimensions),
 		&ZERO_2D, &(pImage->pDimensions), &(pImage->pDimensions));
