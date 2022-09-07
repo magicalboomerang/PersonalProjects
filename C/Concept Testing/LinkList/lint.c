@@ -11,6 +11,7 @@ lint *_getTail(lint *litem);
 lint *lint_Construct(int NewValue){
     lint *litem = (lint *)malloc(sizeof(lint));
     litem->iValue = NewValue;
+    litem->link = NULL;
     return litem;
 }
 
@@ -84,7 +85,7 @@ lint *_getTail(lint *litem){
     lint *headItem = litem;
     
     // When the head is NULL we have the tail!
-    while(headItem){
+    while(headItem != NULL){
         tailItem = headItem;
         headItem = headItem->link;
     };

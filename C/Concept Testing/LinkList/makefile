@@ -8,3 +8,6 @@ run: linktester
 
 valgrind: build
 	valgrind --leak-check=yes ./linktester
+
+gdb: build
+	gdb ./linktester
