@@ -23,13 +23,14 @@ lint *lint_Construct(int NewValue){
  *
  * Bugs: None known
 */
-void lint_Destruct(lint *litem){
+void lint_Destruct(lint **litem){
     lint *ltrash;
-    while(litem){
-        ltrash = litem;
-        litem = litem->link;
+    while(*litem){
+        ltrash = *litem;
+        *litem = (*litem)->link;
         free(ltrash);
     }
+    *litem = NULL;
 }
 
 int lint_Get_Value(lint *litem, int index){
@@ -42,17 +43,41 @@ void lint_Set_Value(lint *litem, int index, int value){
     _setValue(llink, value);
 }
 
-void lint_Add(lint *lhead, lint *ltail){
-    lint *llink = _getTail(lhead);
-    if(llink != NULL){
-        llink->link = ltail;
+// If successful ltail == NULL
+void lint_Append(lint **lhead, lint **ltail){
+    if(lhead != NULL  && ltail != NULL){
+        lint *llink = _getTail(*lhead);
+        if(llink != NULL){
+            llink->link = *ltail;
+        } else {
+            *lhead = *ltail;
+        }
+        *ltail = NULL;
+    }
+}
+
+// linserted will be set to NULL if op successful
+void lint_Insert(lint **lsearched, lint **linserted, int index){
+    if(linserted != NULL && lsearched != NULL){
+        if(index == 0){
+            lint_Append(linserted, lsearched);
+            *lsearched = *linserted;
+            *linserted = NULL;
+        } else if(index > 0){
+            lint *llink = _getItemReference(*lsearched, index - 1);
+            if(llink != NULL){
+                lint_Append(linserted, &llink->link);
+                llink->link = *linserted;
+                *linserted = NULL;
+            }
+        }
     }
 }
 
 // Takes a LL and an integer, appends a new int node
-void lint_Add_int(lint *litem, int NewValue){
+void lint_Append_int(lint *litem, int NewValue){
     lint *lnew = lint_Construct(NewValue);
-    lint_Add(litem, lnew);
+    lint_Append(&litem, &lnew);
 }
 
 // PRIVATE FUNCTIONS! NO PEEKING!
@@ -69,22 +94,29 @@ void _setValue(lint *litem, int value){
         litem->iValue = value;
 }
 
-// Returns: either a reference to an item that exists at the exact index, or NULL.
+/* Returns either:
+ *  A reference to an item that exists at the exact linear index.
+ *      - or -
+ *  A NULL, because the index is out of bounds or the list DNE.
+ */ 
 lint *_getItemReference(lint *litem, int index){
     int litem_index;
     lint *found_litem = (index < 0) ? NULL : litem;
     
     // This algorithm handles litem == NULL
-    for(litem_index = 1; litem_index <= index && found_litem != NULL; litem_index++)
+    for(litem_index = 0; litem_index < index && found_litem != NULL; litem_index++)
         found_litem = found_litem->link;
     return found_litem;
 }
+
 
 lint *_getTail(lint *litem){
     lint *tailItem = NULL;
     lint *headItem = litem;
     
     // When the head is NULL we have the tail!
+    // Also if the tail refers to original head (litem)
+    // There must be some kind of loop!
     while(headItem != NULL){
         tailItem = headItem;
         headItem = headItem->link;
