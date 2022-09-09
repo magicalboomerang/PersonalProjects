@@ -17,8 +17,9 @@ void lint_Set_Value(lint *, int, int);
 
 // Modify list
 void lint_Append(lint **, lint **);
-void lint_Append_int(lint *, int);
+void lint_Append_int(lint **, int);
 void lint_Insert(lint **, lint **, int);
+void lint_Trim(lint **, int);
 
 #endif
 

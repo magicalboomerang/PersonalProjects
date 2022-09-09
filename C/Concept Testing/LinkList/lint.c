@@ -75,9 +75,22 @@ void lint_Insert(lint **lsearched, lint **linserted, int index){
 }
 
 // Takes a LL and an integer, appends a new int node
-void lint_Append_int(lint *litem, int NewValue){
+void lint_Append_int(lint **litem, int NewValue){
     lint *lnew = lint_Construct(NewValue);
-    lint_Append(&litem, &lnew);
+    lint_Append(litem, &lnew);
+}
+
+void lint_Trim(lint **litem, int iTrimIndex){
+    lint *lDrop;
+    if(litem != NULL){
+        if(iTrimIndex > 0){
+            lDrop = _getItemReference(*litem, iTrimIndex - 1);
+            if(lDrop != NULL)
+                lint_Destruct(&(lDrop->link));
+        } else if(iTrimIndex == 0) {
+            lint_Destruct(litem);
+        }
+    }
 }
 
 // PRIVATE FUNCTIONS! NO PEEKING!
@@ -115,12 +128,12 @@ lint *_getTail(lint *litem){
     lint *headItem = litem;
     
     // When the head is NULL we have the tail!
-    // Also if the tail refers to original head (litem)
-    // There must be some kind of loop!
-    while(headItem != NULL){
-        tailItem = headItem;
-        headItem = headItem->link;
-    };
-    
+    if(litem != NULL){
+        do{
+            tailItem = headItem;
+            headItem = headItem->link;
+        }while(headItem != NULL && headItem != litem);
+    // If the lhead == litem here, we're in a ring and need to exit
+    }
     return tailItem;
 }
