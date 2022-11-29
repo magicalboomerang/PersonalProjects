@@ -29,8 +29,8 @@ heap_t *heap_construct(int initial_ceiling){
     heap_t *ret_ptr = (heap_t *)malloc(sizeof(heap_t));
     ret_ptr->attribs = (heap_header_t *)malloc(sizeof(heap_header_t));
     /* Offsetting address establishes first index of 1, for easy sequential access */
-    ret_ptr->root = (heap_node_t **)malloc(sizeof(heap_node_t *) * heap_ceiling) - 1;
-    
+    ret_ptr->root = malloc(sizeof(heap_node_t *) * heap_ceiling);
+    ret_ptr->data = (heap_node_t **)ret_ptr->root - 1;
     /* Set initial heap attributes */
     ret_ptr->attribs->size = 0;
     ret_ptr->attribs->ceiling = heap_ceiling;
@@ -42,8 +42,8 @@ void heap_destruct(heap_t **trash_heap){
     int node_index;
     if(*trash_heap){
         for(node_index = (*trash_heap)->attribs->size; node_index > 0; node_index--)
-            free((*trash_heap)->root[node_index]);/*NOT zero inclusive, for sequential offset*/
-        free((*trash_heap)->root + 1);/* Reallign to true root */
+            free((*trash_heap)->data[node_index]);/*NOT zero inclusive, for sequential offset*/
+        free((*trash_heap)->root);/* Reallign to true root */
         free((*trash_heap)->attribs);
         free(*trash_heap);
         *trash_heap = NULL;
@@ -69,25 +69,48 @@ void heap_push(heap_t *heap_ptr, int priority, data_t data_ptr){
         _heap_grow(heap_ptr);
     }
     
+    /*This turns the standard high priority tree into a low priority tree
+     * Will likely make this a heap attribute defined on construction.
+     */
+    priority *= -1;
+    
     index = ++heap_ptr->attribs->size;
-    heap_ptr->root[index] = _heap_node_construct(priority, data_ptr);
+    heap_ptr->data[index] = _heap_node_construct(priority, data_ptr);
     
     _heap_shuffle_up(heap_ptr, index);
+}
+
+data_t *heap_pop(heap_t *heap_ptr){
+    return NULL;
+}
+
+void _heap_shuffle_down(heap_t *heap_ptr, int index){
+    int left_index = 2 * index, right_index = left_index + 1, swap_index = index;
+        
+    if(_heap_has_member(heap_ptr, left_index))/* Left child exists */
+        if(heap_ptr->data[left_index]->priority > heap_ptr->data[swap_index]->priority)
+            swap_index = left_index;
+    
+    if(_heap_has_member(heap_ptr, right_index))/*Right Child exists*/
+        if(heap_ptr->data[right_index]->priority > heap_ptr->data[swap_index]->priority)
+            swap_index = right_index;
+    
+    if(index != swap_index){
+        _heap_swap(heap_ptr, index, swap_index);
+        _heap_shuffle_down(heap_ptr, swap_index);
+    }
+        
 }
 
 void _heap_shuffle_up(heap_t *heap_ptr, int index){
     int parent_index;
     if(index > 1){
         parent_index = index / 2;
-        if(heap_ptr->root[parent_index]->priority < heap_ptr->root[index]->priority)
+        if(heap_ptr->data[parent_index]->priority < heap_ptr->data[index]->priority)
             _heap_swap(heap_ptr, parent_index, index);
         _heap_shuffle_up(heap_ptr, parent_index);
     }
     /* Implied base case, index == 1, root of tree*/
-}
-
-data_t *heap_pop(heap_t *heap_ptr){
-    return NULL;
 }
 
 
@@ -111,7 +134,7 @@ void _heap_grow(heap_t *heap_ptr){
     #endif
     if(heap_ptr){
         heap_ptr->attribs->ceiling <<= 1;/*fast x2*/
-        heap_ptr->root = (heap_node_t **)realloc((void *)(heap_ptr->root[1]), sizeof(heap_node_t *) * heap_ptr->attribs->ceiling);
+        heap_ptr->root = (heap_node_t **)realloc((void *)heap_ptr->root, sizeof(heap_node_t *) * heap_ptr->attribs->ceiling);
     }
 }
 
@@ -119,9 +142,9 @@ void _heap_swap(heap_t *heap_ptr, int index1, int index2){
     heap_node_t *hold_node;
 
     if(heap_ptr){
-        hold_node = heap_ptr->root[index1];
-        heap_ptr->root[index1] = heap_ptr->root[index2];
-        heap_ptr->root[index2] = hold_node;
+        hold_node = heap_ptr->data[index1];
+        heap_ptr->data[index1] = heap_ptr->data[index2];
+        heap_ptr->data[index2] = hold_node;
     }
 }
 
@@ -184,7 +207,7 @@ void _heap_iop_rec(heap_t *heap_ptr, int parent_index, int level){
     /* Print this node's value */
     for(int i = 0; i <= level; i++)
         printf("\t");
-    printf("%d%s\n", (heap_ptr->root[parent_index])->priority, level == 0 ? " (Root)" : "");
+    printf("%d%s\n", (heap_ptr->data[parent_index])->priority, level == 0 ? " (Root)" : "");
     
     /* left */
     if(_heap_has_member(heap_ptr, left_index))

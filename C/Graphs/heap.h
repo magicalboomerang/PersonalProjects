@@ -28,7 +28,8 @@ typedef struct heap_node_struct{
 
 typedef struct heap_struct{
     heap_header_t *attribs;
-    heap_node_t **root; /* This will point to the sequential LIST */
+    void *root; /* This will point to the memory allocation */
+    heap_node_t **data; /* The 1 initial indexed data pointer */
 } heap_t;
 
 
