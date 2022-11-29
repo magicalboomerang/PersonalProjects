@@ -1,0 +1,60 @@
+Shading 10,176-178, 219
+
+
+Clockwise Existing Binary  method
+Yields one set.
+
+0, nothing/terminal
+1, None
+2. None
+3, 200
+4, None
+5, 186
+6, 201
+7, 204
+8, None
+9, 188
+A, 205
+B, 202
+C, 187
+E, 185
+F, 206
+
+
+Clockwise Void Binary Method.
+Number indicates missing arms
+chonk
+0, 206
+1, 203
+2, 185
+3, 187
+4, 202
+5, 205
+6, 188
+7, None
+8, 204
+9, 201
+10,186
+11,None
+12,200
+13,None
+14,None
+15,None
+
+thin
+0, 197
+1, 194
+2, 180
+3, 191
+4, 193
+5, 196
+6, 217
+7, None
+8, 195
+9, 218
+10,179
+11,None
+12,192
+13,None
+14,None
+15,None
