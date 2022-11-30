@@ -5,25 +5,37 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "heap.h"
-
 /* Default attributes */
 /* MUST BE POSITIVE NON-ZERO */
 #define MIN_HEAP_CEILING 16
 #define DEBUGMODE
 
+/* Eventually may implement separate headers for 'release'
+ * and 'development' but intend to keep a core .c file
+ */
+//#ifdef DEBUGMODE
+//#include "debug_heap.h"
+//#else
+#include "heap.h"
+//#endif
+
 /* Private function prototypes */
 void _heap_grow(heap_t *);
 int _heap_has_member(heap_t *, int);
-void _heap_in_order_print(heap_t *);
-void _heap_iop_rec(heap_t *, int, int);
 heap_node_t *_heap_node_construct(int, data_t);
+void _heap_shrink(heap_t *);
 void _heap_shuffle_down(heap_t *, int);
 void _heap_shuffle_up(heap_t *, int);
 void _heap_swap(heap_t *, int, int);
+/* Only in debug/dev mode, prevent possible bad function calls */
+#ifdef DEBUGMODE
+void _debug_check_heap_rec(heap_t *, int);
+void _heap_in_order_print(heap_t *);
+void _heap_iop_rec(heap_t *, int, int);
+#endif
 
 /* Constructors & Destructors */
-heap_t *heap_construct(int initial_ceiling){
+heap_t *heap_construct(int initial_ceiling, heap_priority_t heap_priority){
     int heap_ceiling = initial_ceiling > MIN_HEAP_CEILING ? initial_ceiling : MIN_HEAP_CEILING;
     /* Allocate all space for structs */
     heap_t *ret_ptr = (heap_t *)malloc(sizeof(heap_t));
@@ -34,15 +46,21 @@ heap_t *heap_construct(int initial_ceiling){
     /* Set initial heap attributes */
     ret_ptr->attribs->size = 0;
     ret_ptr->attribs->ceiling = heap_ceiling;
+    ret_ptr->attribs->heap_priority = heap_priority;
     
     return ret_ptr;
 }
 
 void heap_destruct(heap_t **trash_heap){
     int node_index;
-    if(*trash_heap){
-        for(node_index = (*trash_heap)->attribs->size; node_index > 0; node_index--)
-            free((*trash_heap)->data[node_index]);/*NOT zero inclusive, for sequential offset*/
+    #ifdef DEBUGMODE
+        assert(trash_heap);
+    #endif
+    if(trash_heap && *trash_heap){
+        for(node_index = (*trash_heap)->attribs->size; node_index > 0; node_index--){
+            free((*trash_heap)->data[node_index]->data_ptr);/*NOT zero inclusive, for sequential offset*/
+            free((*trash_heap)->data[node_index]);
+        }
         free((*trash_heap)->root);/* Reallign to true root */
         free((*trash_heap)->attribs);
         free(*trash_heap);
@@ -69,42 +87,59 @@ void heap_push(heap_t *heap_ptr, int priority, data_t data_ptr){
         _heap_grow(heap_ptr);
     }
     
-    /*This turns the standard high priority tree into a low priority tree
-     * Will likely make this a heap attribute defined on construction.
-     */
-    priority *= -1;
-    
     index = ++heap_ptr->attribs->size;
-    heap_ptr->data[index] = _heap_node_construct(priority, data_ptr);
+    
+    /*queue priority turns the standard high priority tree into a low priority tree
+     * Will likely make this a heap attribute defined on construction.
+     */    
+    heap_ptr->data[index] = _heap_node_construct(priority  * heap_ptr->attribs->heap_priority, data_ptr);
     
     _heap_shuffle_up(heap_ptr, index);
 }
 
-data_t *heap_pop(heap_t *heap_ptr){
-    return NULL;
+data_t heap_pop(heap_t *heap_ptr){
+    data_t return_value = NULL;
+    if(heap_ptr && heap_ptr->attribs->size > 0){
+        return_value = heap_ptr->data[1]->data_ptr;
+        _heap_swap(heap_ptr, 1, heap_ptr->attribs->size);
+        free(heap_ptr->data[heap_ptr->attribs->size--]);
+        
+        _heap_shuffle_down(heap_ptr, 1);
+        
+        /* Resize if necessary */
+        if(heap_ptr->attribs->size * 4 < heap_ptr->attribs->ceiling && heap_ptr->attribs->ceiling > MIN_HEAP_CEILING)
+            _heap_shrink(heap_ptr);
+    }
+    return return_value;
 }
 
 void _heap_shuffle_down(heap_t *heap_ptr, int index){
     int left_index = 2 * index, right_index = left_index + 1, swap_index = index;
+    #ifdef DEBUGMODE
+        assert(heap_ptr);
+    #endif
+    if(heap_ptr){    
+        if(_heap_has_member(heap_ptr, left_index))/* Left child exists */
+            if(heap_ptr->data[left_index]->priority > heap_ptr->data[swap_index]->priority)
+                swap_index = left_index;
         
-    if(_heap_has_member(heap_ptr, left_index))/* Left child exists */
-        if(heap_ptr->data[left_index]->priority > heap_ptr->data[swap_index]->priority)
-            swap_index = left_index;
-    
-    if(_heap_has_member(heap_ptr, right_index))/*Right Child exists*/
-        if(heap_ptr->data[right_index]->priority > heap_ptr->data[swap_index]->priority)
-            swap_index = right_index;
-    
-    if(index != swap_index){
-        _heap_swap(heap_ptr, index, swap_index);
-        _heap_shuffle_down(heap_ptr, swap_index);
+        if(_heap_has_member(heap_ptr, right_index))/*Right Child exists*/
+            if(heap_ptr->data[right_index]->priority > heap_ptr->data[swap_index]->priority)
+                swap_index = right_index;
+        
+        if(index != swap_index){
+            _heap_swap(heap_ptr, index, swap_index);
+            _heap_shuffle_down(heap_ptr, swap_index);
+        }
     }
-        
 }
 
 void _heap_shuffle_up(heap_t *heap_ptr, int index){
     int parent_index;
-    if(index > 1){
+    #ifdef DEBUGMODE
+        assert(heap_ptr);
+    #endif
+    if(heap_ptr && index > 1){
         parent_index = index / 2;
         if(heap_ptr->data[parent_index]->priority < heap_ptr->data[index]->priority)
             _heap_swap(heap_ptr, parent_index, index);
@@ -135,12 +170,26 @@ void _heap_grow(heap_t *heap_ptr){
     if(heap_ptr){
         heap_ptr->attribs->ceiling <<= 1;/*fast x2*/
         heap_ptr->root = (heap_node_t **)realloc((void *)heap_ptr->root, sizeof(heap_node_t *) * heap_ptr->attribs->ceiling);
+        heap_ptr->data = (heap_node_t **)heap_ptr->root - 1;
+    }
+}
+
+void _heap_shrink(heap_t *heap_ptr){
+    #ifdef DEBUGMODE
+        assert(heap_ptr);
+    #endif
+    if(heap_ptr){
+        heap_ptr->attribs->ceiling >>= 1;/*fast x2*/
+        heap_ptr->root = (heap_node_t **)realloc((void *)heap_ptr->root, sizeof(heap_node_t *) * heap_ptr->attribs->ceiling);
+        heap_ptr->data = (heap_node_t **)heap_ptr->root - 1;
     }
 }
 
 void _heap_swap(heap_t *heap_ptr, int index1, int index2){
     heap_node_t *hold_node;
-
+    #ifdef DEBUGMODE
+        assert(heap_ptr);
+    #endif
     if(heap_ptr){
         hold_node = heap_ptr->data[index1];
         heap_ptr->data[index1] = heap_ptr->data[index2];
@@ -175,6 +224,7 @@ int _heap_has_member(heap_t *heap_ptr, int inorder_node_index){
 }
 
 
+#ifdef DEBUGMODE
 /* Debug Functions */
 void heap_print(heap_t *heap_ptr){
     if(heap_ptr){
@@ -207,7 +257,9 @@ void _heap_iop_rec(heap_t *heap_ptr, int parent_index, int level){
     /* Print this node's value */
     for(int i = 0; i <= level; i++)
         printf("\t");
-    printf("%d%s\n", (heap_ptr->data[parent_index])->priority, level == 0 ? " (Root)" : "");
+    /* Correct the priority according to low/high priority before print */
+    printf("%d", heap_ptr->data[parent_index]->priority * heap_ptr->attribs->heap_priority);
+    printf(":%p%s\n", heap_ptr->data[parent_index]->data_ptr, level == 0 ? " (Root)" : "");
     
     /* left */
     if(_heap_has_member(heap_ptr, left_index))
@@ -215,4 +267,59 @@ void _heap_iop_rec(heap_t *heap_ptr, int parent_index, int level){
     
 }
 
+void debug_check_heap(heap_t *test_heap){
+    if(test_heap)
+        _debug_check_heap_rec(test_heap, 1);
+}
+
+void _debug_check_heap_rec(heap_t *test_heap, int index){
+    int left_index = 2 * index, right_index = left_index + 1;
+    if(_heap_has_member(test_heap, left_index)){
+        assert(test_heap->data[index]->priority >= test_heap->data[left_index]->priority);
+        _debug_check_heap_rec(test_heap, left_index);
+    }
+    
+    if(_heap_has_member(test_heap, right_index)){
+        assert(test_heap->data[index]->priority >= test_heap->data[right_index]->priority);
+        _debug_check_heap_rec(test_heap, right_index);
+    }
+}
+
+
+/* Only works in debug-mode. A public release should not have this functionality */
+
+heap_t *debug_quick_heap(int floor, int ceiling, heap_priority_t heap_priority){
+    heap_t *return_heap = heap_construct(-1, heap_priority);
+    data_t temp;
+    
+    /* Good optimization for large auto-generated heaps (O(n logn) becomes O(n)).
+     * By inserting according to low/high priority, we eliminate the need for an
+     * upward sort (O(logn)) for the new addition. Notably, the opposite is the
+     * worst case scenario for heap additions.
+     */
+    if(heap_priority == HIGH_PRIORITY){
+        /* Decreasing order favors high-priority queues */
+        for(int index = ceiling; index >= floor; index--){ 
+            temp = (data_t)malloc(sizeof(int));
+            *temp = index;
+            heap_push(return_heap, index, temp);
+        }
+    } else {
+        /* Increasing order favors low-priority queues */
+        for(int index = floor; index <= ceiling; index++){ 
+            temp = (data_t)malloc(sizeof(int));
+            *temp = index;
+            heap_push(return_heap, index, temp);
+        }
+
+    }
+    return return_heap;
+}
+
+void debug_spoof_node(heap_t *heap_ptr, int index, int priority, data_t data_ptr){
+    free(heap_ptr->data[index]->data_ptr);
+    heap_ptr->data[index]->priority = priority;
+    heap_ptr->data[index]->data_ptr = data_ptr;
+}
+#endif
 #endif

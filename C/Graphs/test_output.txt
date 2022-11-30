@@ -1,0 +1,1274 @@
+gcc -g -Wall -Wextra driver.c heap.o -o driver.out
+driver.c: In function ‘main’:
+driver.c:7:14: warning: unused parameter ‘argc’ [-Wunused-parameter]
+    7 | int main(int argc, char *argv[]){
+      |          ~~~~^~~~
+driver.c:7:26: warning: unused parameter ‘argv’ [-Wunused-parameter]
+    7 | int main(int argc, char *argv[]){
+      |                    ~~~~~~^~~~~~
+valgrind --leak-check=yes ./driver.out
+==3589== Memcheck, a memory error detector
+==3589== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==3589== Using Valgrind-3.18.1 and LibVEX; rerun with -h for copyright info
+==3589== Command: ./driver.out
+==3589== 
+Test 1: Try to use empty/uninitialized heaps.
+Testing NULL pointer:
+Tree not found (NULL pointer).
+
+Constructing new heap with invalid value.
+
+Heap empty. Space for 16 node links (128 bytes).
+
+Destroying empty heap.
+
+Tree not found (NULL pointer).
+
+
+
+Test 2: Heap insertions.
+Make new heap, with 0 size.
+Insert single test item, print tree and destruct.
+
+Heap has 1 / 16 members.
+
+	0:(nil) (Root)
+
+
+Make new heap with small positive value.
+Insert 3 items such that they are inserted in sequential order.
+
+Heap has 3 / 16 members.
+
+		2:(nil)
+	0:(nil) (Root)
+		1:(nil)
+
+
+Make new heap with extended initial size (>16).
+
+Heap empty. Space for 32 node links (256 bytes).
+
+Insert 32 items such that they are inserted in random order.
+
+Heap has 32 / 32 members.
+
+					109742:(nil)
+				2665:(nil)
+					343456:(nil)
+			-395:(nil)
+					598875:(nil)
+				586:(nil)
+					2345661:(nil)
+		-563:(nil)
+					5654:(nil)
+				2348:(nil)
+					875200:(nil)
+			-3:(nil)
+					543552:(nil)
+				3368:(nil)
+					8675309:(nil)
+	-734:(nil) (Root)
+					232332358:(nil)
+				4568:(nil)
+					23457:(nil)
+			-468:(nil)
+					74232:(nil)
+				16556:(nil)
+					98742:(nil)
+		-488:(nil)
+					-79:(nil)
+				-234:(nil)
+					68965:(nil)
+			-240:(nil)
+					232323:(nil)
+				213:(nil)
+					8087:(nil)
+						20987:(nil)
+
+
+Ensure they are a heap.Insert 1 more to ensure list expansion.
+
+Heap has 33 / 64 members.
+
+					109742:(nil)
+				2665:(nil)
+					343456:(nil)
+			-395:(nil)
+					598875:(nil)
+				586:(nil)
+					2345661:(nil)
+		-563:(nil)
+					5654:(nil)
+				2348:(nil)
+					875200:(nil)
+			-3:(nil)
+					543552:(nil)
+				3368:(nil)
+					8675309:(nil)
+	-1337:(nil) (Root)
+					232332358:(nil)
+				4568:(nil)
+					23457:(nil)
+			-468:(nil)
+					74232:(nil)
+				16556:(nil)
+					98742:(nil)
+		-734:(nil)
+					-79:(nil)
+				-234:(nil)
+					68965:(nil)
+			-488:(nil)
+					232323:(nil)
+				-240:(nil)
+						8087:(nil)
+					213:(nil)
+						20987:(nil)
+
+
+Insert 5 items with equal priorites.
+
+Heap has 5 / 16 members.
+
+		-1:(nil)
+	-1:(nil) (Root)
+			-1:(nil)
+		-1:(nil)
+			-1:(nil)
+
+
+Test function for building a quick heap.
+
+Heap has 15 / 16 members.
+
+				15:0x4a981c0
+			7:0x4a97cc0
+				14:0x4a98120
+		3:0x4a97a40
+				13:0x4a98080
+			6:0x4a97c20
+				12:0x4a97fe0
+	1:0x4a97900 (Root)
+				11:0x4a97f40
+			5:0x4a97b80
+				10:0x4a97ea0
+		2:0x4a979a0
+				9:0x4a97e00
+			4:0x4a97ae0
+				8:0x4a97d60
+
+
+Test function to check for bad trees.
+
+Heap has 15 / 16 members.
+
+				15:0x4a981c0
+			7:0x4a97cc0
+				14:0x4a98120
+		3:0x4a97a40
+				13:0x4a98080
+			6:0x4a97c20
+				12:0x4a97fe0
+	16:(nil) (Root)
+				11:0x4a97f40
+			5:0x4a97b80
+				10:0x4a97ea0
+		2:0x4a979a0
+				9:0x4a97e00
+			4:0x4a97ae0
+				8:0x4a97d60
+
+
+(Check removed. Manually reinsert to verify.)
+
+Test 3: Heap removals
+Fail to removing objects from an empty list...test passed.
+
+Insert and remove single object.
+
+Heap has 1 / 16 members.
+
+	0:(nil) (Root)
+
+
+Removing only element.
+Removal was successful.
+
+Heap empty. Space for 16 node links (128 bytes).
+
+Insert+Remove 127 items with matching key/data pairs, and verify the final heap order after each removal.
+
+Heap has 127 / 128 members.
+
+							126:0x4a9dc10
+						62:0x4a9afd0
+							125:0x4a9db70
+					30:0x4a99990
+							124:0x4a9dad0
+						61:0x4a9af30
+							123:0x4a9da30
+				14:0x4a98e50
+							122:0x4a9d990
+						60:0x4a9ae90
+							121:0x4a9d8f0
+					29:0x4a998f0
+							120:0x4a9d850
+						59:0x4a9adf0
+							119:0x4a9d7b0
+			6:0x4a98950
+							118:0x4a9d710
+						58:0x4a9ad50
+							117:0x4a9d670
+					28:0x4a99850
+							116:0x4a9d5d0
+						57:0x4a9acb0
+							115:0x4a9d530
+				13:0x4a98db0
+							114:0x4a9d490
+						56:0x4a9ac10
+							113:0x4a9d3f0
+					27:0x4a997b0
+							112:0x4a9d350
+						55:0x4a9ab70
+							111:0x4a9d2b0
+		2:0x4a986d0
+							110:0x4a9d210
+						54:0x4a9aad0
+							109:0x4a9d170
+					26:0x4a99710
+							108:0x4a9d0d0
+						53:0x4a9aa30
+							107:0x4a9d030
+				12:0x4a98d10
+							106:0x4a9cf90
+						52:0x4a9a990
+							105:0x4a9cef0
+					25:0x4a99670
+							104:0x4a9ce50
+						51:0x4a9a8f0
+							103:0x4a9cdb0
+			5:0x4a988b0
+							102:0x4a9cd10
+						50:0x4a9a850
+							101:0x4a9cc70
+					24:0x4a995d0
+							100:0x4a9cbd0
+						49:0x4a9a7b0
+							99:0x4a9cb30
+				11:0x4a98c70
+							98:0x4a9ca90
+						48:0x4a9a710
+							97:0x4a9c9f0
+					23:0x4a99530
+							96:0x4a9c950
+						47:0x4a9a670
+							95:0x4a9c8b0
+	0:0x4a98590 (Root)
+							94:0x4a9c810
+						46:0x4a9a5d0
+							93:0x4a9c770
+					22:0x4a99490
+							92:0x4a9c6d0
+						45:0x4a9a530
+							91:0x4a9c630
+				10:0x4a98bd0
+							90:0x4a9c590
+						44:0x4a9a490
+							89:0x4a9c4f0
+					21:0x4a993f0
+							88:0x4a9c450
+						43:0x4a9a3f0
+							87:0x4a9c3b0
+			4:0x4a98810
+							86:0x4a9c310
+						42:0x4a9a350
+							85:0x4a9c270
+					20:0x4a99350
+							84:0x4a9c1d0
+						41:0x4a9a2b0
+							83:0x4a9c130
+				9:0x4a98b30
+							82:0x4a9c090
+						40:0x4a9a210
+							81:0x4a9bff0
+					19:0x4a992b0
+							80:0x4a9bf50
+						39:0x4a9a170
+							79:0x4a9beb0
+		1:0x4a98630
+							78:0x4a9be10
+						38:0x4a9a0d0
+							77:0x4a9bd70
+					18:0x4a99210
+							76:0x4a9bcd0
+						37:0x4a9a030
+							75:0x4a9bc30
+				8:0x4a98a90
+							74:0x4a9bb90
+						36:0x4a99f90
+							73:0x4a9baf0
+					17:0x4a99170
+							72:0x4a9ba50
+						35:0x4a99ef0
+							71:0x4a9b9b0
+			3:0x4a98770
+							70:0x4a9b910
+						34:0x4a99e50
+							69:0x4a9b870
+					16:0x4a98f90
+							68:0x4a9b7d0
+						33:0x4a99db0
+							67:0x4a9b730
+				7:0x4a989f0
+							66:0x4a9b690
+						32:0x4a99ad0
+							65:0x4a9b5f0
+					15:0x4a98ef0
+							64:0x4a9b110
+						31:0x4a99a30
+							63:0x4a9b070
+
+
+Item 0 popped: 0
+Item 1 popped: 1
+Item 2 popped: 2
+Item 3 popped: 3
+Item 4 popped: 4
+Item 5 popped: 5
+Item 6 popped: 6
+Item 7 popped: 7
+Item 8 popped: 8
+Item 9 popped: 9
+
+Heap has 117 / 128 members.
+
+						62:0x4a9afd0
+					30:0x4a99990
+						61:0x4a9af30
+				14:0x4a98e50
+						60:0x4a9ae90
+					29:0x4a998f0
+						59:0x4a9adf0
+			13:0x4a98db0
+						58:0x4a9ad50
+					28:0x4a99850
+							116:0x4a9d5d0
+						57:0x4a9acb0
+							115:0x4a9d530
+				27:0x4a997b0
+							114:0x4a9d490
+						56:0x4a9ac10
+							113:0x4a9d3f0
+					55:0x4a9ab70
+							112:0x4a9d350
+						111:0x4a9d2b0
+							122:0x4a9d990
+		11:0x4a98c70
+							110:0x4a9d210
+						54:0x4a9aad0
+							109:0x4a9d170
+					26:0x4a99710
+							108:0x4a9d0d0
+						53:0x4a9aa30
+							107:0x4a9d030
+				25:0x4a99670
+							106:0x4a9cf90
+						52:0x4a9a990
+							105:0x4a9cef0
+					51:0x4a9a8f0
+							104:0x4a9ce50
+						103:0x4a9cdb0
+							121:0x4a9d8f0
+			12:0x4a98d10
+							102:0x4a9cd10
+						50:0x4a9a850
+							101:0x4a9cc70
+					24:0x4a995d0
+							100:0x4a9cbd0
+						49:0x4a9a7b0
+							99:0x4a9cb30
+				23:0x4a99530
+							98:0x4a9ca90
+						48:0x4a9a710
+							97:0x4a9c9f0
+					47:0x4a9a670
+							96:0x4a9c950
+						95:0x4a9c8b0
+							125:0x4a9db70
+	10:0x4a98bd0 (Root)
+							94:0x4a9c810
+						46:0x4a9a5d0
+							93:0x4a9c770
+					22:0x4a99490
+							92:0x4a9c6d0
+						45:0x4a9a530
+							91:0x4a9c630
+				21:0x4a993f0
+							90:0x4a9c590
+						44:0x4a9a490
+							89:0x4a9c4f0
+					43:0x4a9a3f0
+							88:0x4a9c450
+						87:0x4a9c3b0
+							119:0x4a9d7b0
+			19:0x4a992b0
+							86:0x4a9c310
+						42:0x4a9a350
+							85:0x4a9c270
+					41:0x4a9a2b0
+							84:0x4a9c1d0
+						83:0x4a9c130
+							118:0x4a9d710
+				20:0x4a99350
+							82:0x4a9c090
+						40:0x4a9a210
+							81:0x4a9bff0
+					39:0x4a9a170
+							80:0x4a9bf50
+						79:0x4a9beb0
+							124:0x4a9dad0
+		15:0x4a98ef0
+							78:0x4a9be10
+						38:0x4a9a0d0
+							77:0x4a9bd70
+					18:0x4a99210
+							76:0x4a9bcd0
+						37:0x4a9a030
+							75:0x4a9bc30
+				17:0x4a99170
+							74:0x4a9bb90
+						36:0x4a99f90
+							73:0x4a9baf0
+					35:0x4a99ef0
+							72:0x4a9ba50
+						71:0x4a9b9b0
+							123:0x4a9da30
+			16:0x4a98f90
+							70:0x4a9b910
+						34:0x4a99e50
+							69:0x4a9b870
+					33:0x4a99db0
+							68:0x4a9b7d0
+						67:0x4a9b730
+							120:0x4a9d850
+				31:0x4a99a30
+							66:0x4a9b690
+						65:0x4a9b5f0
+							117:0x4a9d670
+					32:0x4a99ad0
+							64:0x4a9b110
+						63:0x4a9b070
+							126:0x4a9dc10
+
+
+Item 10 popped: 10
+Item 11 popped: 11
+Item 12 popped: 12
+Item 13 popped: 13
+Item 14 popped: 14
+Item 15 popped: 15
+Item 16 popped: 16
+Item 17 popped: 17
+Item 18 popped: 18
+Item 19 popped: 19
+
+Heap has 107 / 128 members.
+
+						62:0x4a9afd0
+					30:0x4a99990
+						61:0x4a9af30
+				29:0x4a998f0
+						60:0x4a9ae90
+					59:0x4a9adf0
+						115:0x4a9d530
+			27:0x4a997b0
+						58:0x4a9ad50
+					57:0x4a9acb0
+						114:0x4a9d490
+				28:0x4a99850
+						56:0x4a9ac10
+					55:0x4a9ab70
+						111:0x4a9d2b0
+		23:0x4a99530
+						54:0x4a9aad0
+					26:0x4a99710
+						53:0x4a9aa30
+				25:0x4a99670
+							106:0x4a9cf90
+						52:0x4a9a990
+							105:0x4a9cef0
+					51:0x4a9a8f0
+							104:0x4a9ce50
+						103:0x4a9cdb0
+							121:0x4a9d8f0
+			24:0x4a995d0
+							102:0x4a9cd10
+						50:0x4a9a850
+							101:0x4a9cc70
+					49:0x4a9a7b0
+							100:0x4a9cbd0
+						99:0x4a9cb30
+							116:0x4a9d5d0
+				47:0x4a9a670
+							98:0x4a9ca90
+						97:0x4a9c9f0
+							113:0x4a9d3f0
+					48:0x4a9a710
+							96:0x4a9c950
+						95:0x4a9c8b0
+							125:0x4a9db70
+	20:0x4a99350 (Root)
+							94:0x4a9c810
+						46:0x4a9a5d0
+							93:0x4a9c770
+					45:0x4a9a530
+							92:0x4a9c6d0
+						91:0x4a9c630
+							108:0x4a9d0d0
+				43:0x4a9a3f0
+							90:0x4a9c590
+						89:0x4a9c4f0
+							107:0x4a9d030
+					44:0x4a9a490
+							88:0x4a9c450
+						87:0x4a9c3b0
+							119:0x4a9d7b0
+			22:0x4a99490
+							86:0x4a9c310
+						42:0x4a9a350
+							85:0x4a9c270
+					41:0x4a9a2b0
+							84:0x4a9c1d0
+						83:0x4a9c130
+							118:0x4a9d710
+				39:0x4a9a170
+							82:0x4a9c090
+						81:0x4a9bff0
+							109:0x4a9d170
+					40:0x4a9a210
+							80:0x4a9bf50
+						79:0x4a9beb0
+							124:0x4a9dad0
+		21:0x4a993f0
+							78:0x4a9be10
+						38:0x4a9a0d0
+							77:0x4a9bd70
+					37:0x4a9a030
+							76:0x4a9bcd0
+						75:0x4a9bc30
+							112:0x4a9d350
+				35:0x4a99ef0
+							74:0x4a9bb90
+						73:0x4a9baf0
+							122:0x4a9d990
+					36:0x4a99f90
+							72:0x4a9ba50
+						71:0x4a9b9b0
+							123:0x4a9da30
+			31:0x4a99a30
+							70:0x4a9b910
+						34:0x4a99e50
+							69:0x4a9b870
+					33:0x4a99db0
+							68:0x4a9b7d0
+						67:0x4a9b730
+							120:0x4a9d850
+				32:0x4a99ad0
+							66:0x4a9b690
+						65:0x4a9b5f0
+							117:0x4a9d670
+					63:0x4a9b070
+							110:0x4a9d210
+						64:0x4a9b110
+							126:0x4a9dc10
+
+
+Item 20 popped: 20
+Item 21 popped: 21
+Item 22 popped: 22
+Item 23 popped: 23
+Item 24 popped: 24
+Item 25 popped: 25
+Item 26 popped: 26
+Item 27 popped: 27
+Item 28 popped: 28
+Item 29 popped: 29
+
+Heap has 97 / 128 members.
+
+						62:0x4a9afd0
+					61:0x4a9af30
+						100:0x4a9cbd0
+				59:0x4a9adf0
+						116:0x4a9d5d0
+					60:0x4a9ae90
+						115:0x4a9d530
+			55:0x4a9ab70
+						58:0x4a9ad50
+					57:0x4a9acb0
+						114:0x4a9d490
+				56:0x4a9ac10
+						101:0x4a9cc70
+					98:0x4a9ca90
+						111:0x4a9d2b0
+		47:0x4a9a670
+						54:0x4a9aad0
+					53:0x4a9aa30
+						104:0x4a9ce50
+				51:0x4a9a8f0
+						121:0x4a9d8f0
+					52:0x4a9a990
+						103:0x4a9cdb0
+			48:0x4a9a710
+						113:0x4a9d3f0
+					50:0x4a9a850
+						99:0x4a9cb30
+				49:0x4a9a7b0
+						97:0x4a9c9f0
+					95:0x4a9c8b0
+							102:0x4a9cd10
+						96:0x4a9c950
+							125:0x4a9db70
+	30:0x4a99990 (Root)
+							94:0x4a9c810
+						46:0x4a9a5d0
+							93:0x4a9c770
+					45:0x4a9a530
+							92:0x4a9c6d0
+						91:0x4a9c630
+							108:0x4a9d0d0
+				43:0x4a9a3f0
+							90:0x4a9c590
+						89:0x4a9c4f0
+							107:0x4a9d030
+					44:0x4a9a490
+							88:0x4a9c450
+						87:0x4a9c3b0
+							119:0x4a9d7b0
+			39:0x4a9a170
+							86:0x4a9c310
+						42:0x4a9a350
+							85:0x4a9c270
+					41:0x4a9a2b0
+							84:0x4a9c1d0
+						83:0x4a9c130
+							118:0x4a9d710
+				40:0x4a9a210
+							82:0x4a9c090
+						81:0x4a9bff0
+							109:0x4a9d170
+					79:0x4a9beb0
+							106:0x4a9cf90
+						80:0x4a9bf50
+							124:0x4a9dad0
+		31:0x4a99a30
+							78:0x4a9be10
+						38:0x4a9a0d0
+							77:0x4a9bd70
+					37:0x4a9a030
+							76:0x4a9bcd0
+						75:0x4a9bc30
+							112:0x4a9d350
+				35:0x4a99ef0
+							74:0x4a9bb90
+						73:0x4a9baf0
+							122:0x4a9d990
+					36:0x4a99f90
+							72:0x4a9ba50
+						71:0x4a9b9b0
+							123:0x4a9da30
+			32:0x4a99ad0
+							70:0x4a9b910
+						69:0x4a9b870
+							105:0x4a9cef0
+					34:0x4a99e50
+							68:0x4a9b7d0
+						67:0x4a9b730
+							120:0x4a9d850
+				33:0x4a99db0
+							66:0x4a9b690
+						65:0x4a9b5f0
+							117:0x4a9d670
+					63:0x4a9b070
+							110:0x4a9d210
+						64:0x4a9b110
+							126:0x4a9dc10
+
+
+Item 30 popped: 30
+Item 31 popped: 31
+Item 32 popped: 32
+Item 33 popped: 33
+Item 34 popped: 34
+Item 35 popped: 35
+Item 36 popped: 36
+Item 37 popped: 37
+Item 38 popped: 38
+Item 39 popped: 39
+
+Heap has 87 / 128 members.
+
+						62:0x4a9afd0
+					61:0x4a9af30
+						100:0x4a9cbd0
+				59:0x4a9adf0
+						116:0x4a9d5d0
+					60:0x4a9ae90
+						115:0x4a9d530
+			55:0x4a9ab70
+						58:0x4a9ad50
+					57:0x4a9acb0
+						114:0x4a9d490
+				56:0x4a9ac10
+						101:0x4a9cc70
+					98:0x4a9ca90
+						111:0x4a9d2b0
+		47:0x4a9a670
+						54:0x4a9aad0
+					53:0x4a9aa30
+						104:0x4a9ce50
+				51:0x4a9a8f0
+						121:0x4a9d8f0
+					52:0x4a9a990
+						103:0x4a9cdb0
+			48:0x4a9a710
+						113:0x4a9d3f0
+					50:0x4a9a850
+						99:0x4a9cb30
+				49:0x4a9a7b0
+						97:0x4a9c9f0
+					95:0x4a9c8b0
+						96:0x4a9c950
+	40:0x4a9a210 (Root)
+						46:0x4a9a5d0
+					45:0x4a9a530
+						91:0x4a9c630
+				43:0x4a9a3f0
+						89:0x4a9c4f0
+					44:0x4a9a490
+						87:0x4a9c3b0
+			42:0x4a9a350
+							86:0x4a9c310
+						85:0x4a9c270
+							107:0x4a9d030
+					83:0x4a9c130
+							88:0x4a9c450
+						84:0x4a9c1d0
+							118:0x4a9d710
+				79:0x4a9beb0
+							82:0x4a9c090
+						81:0x4a9bff0
+							109:0x4a9d170
+					80:0x4a9bf50
+							119:0x4a9d7b0
+						106:0x4a9cf90
+							124:0x4a9dad0
+		41:0x4a9a2b0
+							78:0x4a9be10
+						77:0x4a9bd70
+							93:0x4a9c770
+					75:0x4a9bc30
+							92:0x4a9c6d0
+						76:0x4a9bcd0
+							112:0x4a9d350
+				71:0x4a9b9b0
+							74:0x4a9bb90
+						73:0x4a9baf0
+							122:0x4a9d990
+					72:0x4a9ba50
+							108:0x4a9d0d0
+						94:0x4a9c810
+							123:0x4a9da30
+			63:0x4a9b070
+							70:0x4a9b910
+						69:0x4a9b870
+							105:0x4a9cef0
+					67:0x4a9b730
+							102:0x4a9cd10
+						68:0x4a9b7d0
+							120:0x4a9d850
+				64:0x4a9b110
+							90:0x4a9c590
+						66:0x4a9b690
+							117:0x4a9d670
+					65:0x4a9b5f0
+							125:0x4a9db70
+						110:0x4a9d210
+							126:0x4a9dc10
+
+
+Item 40 popped: 40
+Item 41 popped: 41
+Item 42 popped: 42
+Item 43 popped: 43
+Item 44 popped: 44
+Item 45 popped: 45
+Item 46 popped: 46
+Item 47 popped: 47
+Item 48 popped: 48
+Item 49 popped: 49
+
+Heap has 77 / 128 members.
+
+						62:0x4a9afd0
+					61:0x4a9af30
+						100:0x4a9cbd0
+				59:0x4a9adf0
+						116:0x4a9d5d0
+					60:0x4a9ae90
+						115:0x4a9d530
+			55:0x4a9ab70
+						58:0x4a9ad50
+					57:0x4a9acb0
+						114:0x4a9d490
+				56:0x4a9ac10
+						101:0x4a9cc70
+					98:0x4a9ca90
+						111:0x4a9d2b0
+		51:0x4a9a8f0
+						93:0x4a9c770
+					54:0x4a9aad0
+						104:0x4a9ce50
+				53:0x4a9aa30
+						121:0x4a9d8f0
+					78:0x4a9be10
+						103:0x4a9cdb0
+			52:0x4a9a990
+						113:0x4a9d3f0
+					99:0x4a9cb30
+						119:0x4a9d7b0
+				95:0x4a9c8b0
+						97:0x4a9c9f0
+					96:0x4a9c950
+						124:0x4a9dad0
+	50:0x4a9a850 (Root)
+						107:0x4a9d030
+					88:0x4a9c450
+						91:0x4a9c630
+				86:0x4a9c310
+						89:0x4a9c4f0
+					87:0x4a9c3b0
+						118:0x4a9d710
+			79:0x4a9beb0
+						85:0x4a9c270
+					83:0x4a9c130
+						84:0x4a9c1d0
+				80:0x4a9bf50
+						82:0x4a9c090
+					81:0x4a9bff0
+						106:0x4a9cf90
+		63:0x4a9b070
+						77:0x4a9bd70
+					75:0x4a9bc30
+							92:0x4a9c6d0
+						76:0x4a9bcd0
+							112:0x4a9d350
+				71:0x4a9b9b0
+							74:0x4a9bb90
+						73:0x4a9baf0
+							122:0x4a9d990
+					72:0x4a9ba50
+							108:0x4a9d0d0
+						94:0x4a9c810
+							123:0x4a9da30
+			64:0x4a9b110
+							70:0x4a9b910
+						69:0x4a9b870
+							105:0x4a9cef0
+					67:0x4a9b730
+							102:0x4a9cd10
+						68:0x4a9b7d0
+							120:0x4a9d850
+				65:0x4a9b5f0
+							109:0x4a9d170
+						90:0x4a9c590
+							117:0x4a9d670
+					66:0x4a9b690
+							125:0x4a9db70
+						110:0x4a9d210
+							126:0x4a9dc10
+
+
+Item 50 popped: 50
+Item 51 popped: 51
+Item 52 popped: 52
+Item 53 popped: 53
+Item 54 popped: 54
+Item 55 popped: 55
+Item 56 popped: 56
+Item 57 popped: 57
+Item 58 popped: 58
+Item 59 popped: 59
+
+Heap has 67 / 128 members.
+
+						105:0x4a9cef0
+					100:0x4a9cbd0
+						102:0x4a9cd10
+				70:0x4a9b910
+						116:0x4a9d5d0
+					115:0x4a9d530
+						120:0x4a9d850
+			62:0x4a9afd0
+						122:0x4a9d990
+					108:0x4a9d0d0
+						114:0x4a9d490
+				98:0x4a9ca90
+						123:0x4a9da30
+					101:0x4a9cc70
+						111:0x4a9d2b0
+		61:0x4a9af30
+						93:0x4a9c770
+					92:0x4a9c6d0
+						104:0x4a9ce50
+				78:0x4a9be10
+						121:0x4a9d8f0
+					103:0x4a9cdb0
+						112:0x4a9d350
+			74:0x4a9bb90
+						113:0x4a9d3f0
+					99:0x4a9cb30
+						119:0x4a9d7b0
+				95:0x4a9c8b0
+						97:0x4a9c9f0
+					96:0x4a9c950
+						124:0x4a9dad0
+	60:0x4a9ae90 (Root)
+						107:0x4a9d030
+					88:0x4a9c450
+						91:0x4a9c630
+				86:0x4a9c310
+						89:0x4a9c4f0
+					87:0x4a9c3b0
+						118:0x4a9d710
+			79:0x4a9beb0
+						85:0x4a9c270
+					83:0x4a9c130
+						84:0x4a9c1d0
+				80:0x4a9bf50
+						82:0x4a9c090
+					81:0x4a9bff0
+						106:0x4a9cf90
+		63:0x4a9b070
+						77:0x4a9bd70
+					75:0x4a9bc30
+						76:0x4a9bcd0
+				71:0x4a9b9b0
+						73:0x4a9baf0
+					72:0x4a9ba50
+						94:0x4a9c810
+			64:0x4a9b110
+						69:0x4a9b870
+					67:0x4a9b730
+						68:0x4a9b7d0
+				65:0x4a9b5f0
+							109:0x4a9d170
+						90:0x4a9c590
+							117:0x4a9d670
+					66:0x4a9b690
+							125:0x4a9db70
+						110:0x4a9d210
+							126:0x4a9dc10
+
+
+Item 60 popped: 60
+Item 61 popped: 61
+Item 62 popped: 62
+Item 63 popped: 63
+Item 64 popped: 64
+Item 65 popped: 65
+Item 66 popped: 66
+Item 67 popped: 67
+Item 68 popped: 68
+Item 69 popped: 69
+
+Heap has 57 / 128 members.
+
+					102:0x4a9cd10
+				100:0x4a9cbd0
+					115:0x4a9d530
+			98:0x4a9ca90
+					108:0x4a9d0d0
+				101:0x4a9cc70
+						123:0x4a9da30
+					111:0x4a9d2b0
+						117:0x4a9d670
+		74:0x4a9bb90
+						114:0x4a9d490
+					93:0x4a9c770
+						104:0x4a9ce50
+				92:0x4a9c6d0
+						121:0x4a9d8f0
+					103:0x4a9cdb0
+						112:0x4a9d350
+			78:0x4a9be10
+						113:0x4a9d3f0
+					99:0x4a9cb30
+						119:0x4a9d7b0
+				95:0x4a9c8b0
+						97:0x4a9c9f0
+					96:0x4a9c950
+						124:0x4a9dad0
+	70:0x4a9b910 (Root)
+						107:0x4a9d030
+					88:0x4a9c450
+						91:0x4a9c630
+				86:0x4a9c310
+						89:0x4a9c4f0
+					87:0x4a9c3b0
+						118:0x4a9d710
+			79:0x4a9beb0
+						85:0x4a9c270
+					83:0x4a9c130
+						84:0x4a9c1d0
+				80:0x4a9bf50
+						82:0x4a9c090
+					81:0x4a9bff0
+						106:0x4a9cf90
+		71:0x4a9b9b0
+						77:0x4a9bd70
+					75:0x4a9bc30
+						76:0x4a9bcd0
+				73:0x4a9baf0
+						120:0x4a9d850
+					94:0x4a9c810
+						122:0x4a9d990
+			72:0x4a9ba50
+						109:0x4a9d170
+					105:0x4a9cef0
+						126:0x4a9dc10
+				90:0x4a9c590
+						125:0x4a9db70
+					110:0x4a9d210
+						116:0x4a9d5d0
+
+
+Item 70 popped: 70
+Item 71 popped: 71
+Item 72 popped: 72
+Item 73 popped: 73
+Item 74 popped: 74
+Item 75 popped: 75
+Item 76 popped: 76
+Item 77 popped: 77
+Item 78 popped: 78
+Item 79 popped: 79
+
+Heap has 47 / 128 members.
+
+					102:0x4a9cd10
+				100:0x4a9cbd0
+					115:0x4a9d530
+			98:0x4a9ca90
+					108:0x4a9d0d0
+				101:0x4a9cc70
+					111:0x4a9d2b0
+		92:0x4a9c6d0
+					104:0x4a9ce50
+				103:0x4a9cdb0
+					119:0x4a9d7b0
+			93:0x4a9c770
+					99:0x4a9cb30
+				95:0x4a9c8b0
+					96:0x4a9c950
+	80:0x4a9bf50 (Root)
+						107:0x4a9d030
+					88:0x4a9c450
+						91:0x4a9c630
+				86:0x4a9c310
+						89:0x4a9c4f0
+					87:0x4a9c3b0
+						118:0x4a9d710
+			82:0x4a9c090
+						85:0x4a9c270
+					84:0x4a9c1d0
+						124:0x4a9dad0
+				83:0x4a9c130
+						113:0x4a9d3f0
+					97:0x4a9c9f0
+						106:0x4a9cf90
+		81:0x4a9bff0
+						117:0x4a9d670
+					114:0x4a9d490
+						123:0x4a9da30
+				94:0x4a9c810
+						121:0x4a9d8f0
+					120:0x4a9d850
+						122:0x4a9d990
+			90:0x4a9c590
+						112:0x4a9d350
+					109:0x4a9d170
+						126:0x4a9dc10
+				105:0x4a9cef0
+						125:0x4a9db70
+					110:0x4a9d210
+						116:0x4a9d5d0
+
+
+Item 80 popped: 80
+Item 81 popped: 81
+Item 82 popped: 82
+Item 83 popped: 83
+Item 84 popped: 84
+Item 85 popped: 85
+Item 86 popped: 86
+Item 87 popped: 87
+Item 88 popped: 88
+Item 89 popped: 89
+
+Heap has 37 / 128 members.
+
+					102:0x4a9cd10
+				100:0x4a9cbd0
+					115:0x4a9d530
+			98:0x4a9ca90
+					108:0x4a9d0d0
+				101:0x4a9cc70
+					111:0x4a9d2b0
+		92:0x4a9c6d0
+					104:0x4a9ce50
+				103:0x4a9cdb0
+					119:0x4a9d7b0
+			93:0x4a9c770
+					99:0x4a9cb30
+				95:0x4a9c8b0
+					96:0x4a9c950
+	90:0x4a9c590 (Root)
+					124:0x4a9dad0
+				107:0x4a9d030
+					118:0x4a9d710
+			97:0x4a9c9f0
+					113:0x4a9d3f0
+				106:0x4a9cf90
+					123:0x4a9da30
+		91:0x4a9c630
+					117:0x4a9d670
+				114:0x4a9d490
+						121:0x4a9d8f0
+					120:0x4a9d850
+						122:0x4a9d990
+			94:0x4a9c810
+						112:0x4a9d350
+					109:0x4a9d170
+						126:0x4a9dc10
+				105:0x4a9cef0
+						125:0x4a9db70
+					110:0x4a9d210
+						116:0x4a9d5d0
+
+
+Item 90 popped: 90
+Item 91 popped: 91
+Item 92 popped: 92
+Item 93 popped: 93
+Item 94 popped: 94
+Item 95 popped: 95
+Item 96 popped: 96
+Item 97 popped: 97
+Item 98 popped: 98
+Item 99 popped: 99
+
+Heap has 27 / 64 members.
+
+				111:0x4a9d2b0
+			102:0x4a9cd10
+				108:0x4a9d0d0
+		101:0x4a9cc70
+					115:0x4a9d530
+				104:0x4a9ce50
+					119:0x4a9d7b0
+			103:0x4a9cdb0
+					125:0x4a9db70
+				121:0x4a9d8f0
+					122:0x4a9d990
+	100:0x4a9cbd0 (Root)
+					124:0x4a9dad0
+				107:0x4a9d030
+					118:0x4a9d710
+			106:0x4a9cf90
+					126:0x4a9dc10
+				113:0x4a9d3f0
+					123:0x4a9da30
+		105:0x4a9cef0
+					117:0x4a9d670
+				114:0x4a9d490
+					120:0x4a9d850
+			109:0x4a9d170
+					112:0x4a9d350
+				110:0x4a9d210
+					116:0x4a9d5d0
+
+
+Item 100 popped: 100
+Item 101 popped: 101
+Item 102 popped: 102
+Item 103 popped: 103
+Item 104 popped: 104
+Item 105 popped: 105
+Item 106 popped: 106
+Item 107 popped: 107
+Item 108 popped: 108
+Item 109 popped: 109
+
+Heap has 17 / 64 members.
+
+				122:0x4a9d990
+			115:0x4a9d530
+				124:0x4a9dad0
+		111:0x4a9d2b0
+				125:0x4a9db70
+			119:0x4a9d7b0
+				121:0x4a9d8f0
+	110:0x4a9d210 (Root)
+				118:0x4a9d710
+			113:0x4a9d3f0
+				123:0x4a9da30
+		112:0x4a9d350
+				120:0x4a9d850
+			114:0x4a9d490
+					126:0x4a9dc10
+				116:0x4a9d5d0
+					117:0x4a9d670
+
+
+Item 110 popped: 110
+Item 111 popped: 111
+Item 112 popped: 112
+Item 113 popped: 113
+Item 114 popped: 114
+Item 115 popped: 115
+Item 116 popped: 116
+Item 117 popped: 117
+Item 118 popped: 118
+Item 119 popped: 119
+
+Heap has 7 / 16 members.
+
+			122:0x4a9d990
+		121:0x4a9d8f0
+			125:0x4a9db70
+	120:0x4a9d850 (Root)
+			126:0x4a9dc10
+		123:0x4a9da30
+			124:0x4a9dad0
+
+
+Item 120 popped: 120
+Item 121 popped: 121
+Item 122 popped: 122
+Item 123 popped: 123
+Item 124 popped: 124
+Item 125 popped: 125
+Item 126 popped: 126
+
+Heap empty. Space for 16 node links (128 bytes).
+
+==3589== 
+==3589== HEAP SUMMARY:
+==3589==     in use at exit: 0 bytes in 0 blocks
+==3589==   total heap usage: 360 allocs, 360 frees, 12,268 bytes allocated
+==3589== 
+==3589== All heap blocks were freed -- no leaks are possible
+==3589== 
+==3589== For lists of detected and suppressed errors, rerun with: -s
+==3589== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
