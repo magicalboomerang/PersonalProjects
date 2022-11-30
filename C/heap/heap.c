@@ -7,17 +7,16 @@
 
 /* Default attributes */
 /* MUST BE POSITIVE NON-ZERO */
-#define MIN_HEAP_CEILING 16
-#define DEBUGMODE
+/*#define DEBUGMODE*/
 
 /* Eventually may implement separate headers for 'release'
  * and 'development' but intend to keep a core .c file
  */
-//#ifdef DEBUGMODE
-//#include "debug_heap.h"
-//#else
+#ifdef DEBUGMODE
+#include "debug_heap.h"
+#else
 #include "heap.h"
-//#endif
+#endif
 
 /* Private function prototypes */
 void _heap_grow(heap_t *);
@@ -188,9 +187,9 @@ void _heap_shrink(heap_t *heap_ptr){
 void _heap_swap(heap_t *heap_ptr, int index1, int index2){
     heap_node_t *hold_node;
     #ifdef DEBUGMODE
-        assert(heap_ptr);
+        assert(heap_ptr && _heap_has_member(heap_ptr, index1) && _heap_has_member(heap_ptr, index2));
     #endif
-    if(heap_ptr){
+    if(heap_ptr && _heap_has_member(heap_ptr, index1) && _heap_has_member(heap_ptr, index2)){
         hold_node = heap_ptr->data[index1];
         heap_ptr->data[index1] = heap_ptr->data[index2];
         heap_ptr->data[index2] = hold_node;

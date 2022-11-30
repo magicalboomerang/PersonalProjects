@@ -71,4 +71,11 @@ void heapify(heap_t *); /* Currently unimplemented */
 int heap_is_empty(heap_t *);
 int heap_is_full(heap_t *);
 
+/* Debug Functions - Remove this section for 'release' */
+void heap_print(heap_t *);
+void debug_check_heap(heap_t *);
+heap_t *debug_quick_heap(int, int, heap_priority_t);
+void debug_spoof_node(heap_t *, int, int, data_t);
+/* */
+
 #endif
